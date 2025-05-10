@@ -1,12 +1,16 @@
 package com.DPhong.storeMe.service.user;
 
+import com.DPhong.storeMe.dto.authentication.ChangePasswordRequestDTO;
 import com.DPhong.storeMe.dto.authentication.RegisterRequestDTO;
 import com.DPhong.storeMe.dto.user.UserResponseDTO;
 import com.DPhong.storeMe.entity.User;
 import com.DPhong.storeMe.enums.UserStatus;
+import com.DPhong.storeMe.exception.BadRequestException;
 import com.DPhong.storeMe.exception.DataConflictException;
+import com.DPhong.storeMe.exception.ResourceNotFoundException;
 import com.DPhong.storeMe.mapper.UserMapper;
 import com.DPhong.storeMe.repository.UserRepository;
+import com.DPhong.storeMe.security.SecurityUtils;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +25,12 @@ public class UserServiceImpl implements UserService {
   private final UserMapper userMapper;
   private final PasswordEncoder passwordEncoder;
 
+  /**
+   * Register a new user.
+   *
+   * @param registerRequestDTO the user data to register
+   * @return the registered user data
+   */
   @Override
   public UserResponseDTO registerUser(RegisterRequestDTO registerRequestDTO) {
     validateUser(registerRequestDTO);
@@ -52,5 +62,29 @@ public class UserServiceImpl implements UserService {
     if (!errors.isEmpty()) {
       throw new DataConflictException("user data already exists", errors);
     }
+  }
+
+  /**
+   * Change the password of the current user.
+   *
+   * @param oldPassword the old password
+   * @param newPassword the new password
+   */
+  @Override
+  public void changePassword(ChangePasswordRequestDTO changePasswordRequestDTO) {
+    User user = getCurrentUser();
+    if (!passwordEncoder.matches(
+        changePasswordRequestDTO.getOldPassword(), user.getPasswordHash())) {
+      throw new BadRequestException("Old password is incorrect");
+    }
+    user.setPasswordHash(passwordEncoder.encode(changePasswordRequestDTO.getNewPassword()));
+    userRepository.save(user);
+  }
+
+  /** Get the current user from the security context. */
+  private User getCurrentUser() {
+    return userRepository
+        .findById(SecurityUtils.getCurrentUserId())
+        .orElseThrow(() -> new ResourceNotFoundException("User not found"));
   }
 }

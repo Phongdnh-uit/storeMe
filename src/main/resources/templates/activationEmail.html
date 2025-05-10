@@ -1,0 +1,52 @@
+<!doctype html>
+<html xmlns:th="http://www.thymeleaf.org" lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Activation Email</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        margin: 0;
+        padding: 20px;
+      }
+      .container {
+        max-width: 600px;
+        margin: auto;
+        background: white;
+        padding: 20px;
+        border-radius: 5px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        color: #333;
+      }
+      p {
+        color: #555;
+      }
+      a {
+        display: inline-block;
+        padding: 10px 20px;
+        background-color: #007bff;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Activate Your Account</h1>
+      <p>Xin chào <strong th:text="${username}"></strong>,</p>
+      <p>
+        Cảm ơn bạn đã đăng ký tài khoản với chúng tôi! Để hoàn tất quá trình
+        đăng ký, vui lòng nhấp vào liên kết bên dưới để kích hoạt tài khoản của
+        bạn.
+      </p>
+      <a th:href="${activationLink}">Kích hoạt tài khoản</a>
+      <p>Nếu không phải bạn tạo tài khoản. Xin hãy bỏ qua email này.</p>
+      <p>Trân trọng,</p>
+    </div>
+  </body>
+</html>

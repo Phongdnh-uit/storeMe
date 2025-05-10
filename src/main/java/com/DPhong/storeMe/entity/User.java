@@ -1,5 +1,6 @@
 package com.DPhong.storeMe.entity;
 
+import com.DPhong.storeMe.enums.LoginProvider;
 import com.DPhong.storeMe.enums.UserStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -29,4 +30,8 @@ public class User extends BaseEntity {
   @Column(nullable = false)
   @Enumerated(EnumType.STRING)
   private UserStatus status;
+
+  @Column(nullable = false)
+  @Enumerated(EnumType.STRING)
+  private LoginProvider loginProvider;
 }
