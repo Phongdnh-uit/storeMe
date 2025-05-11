@@ -14,6 +14,6 @@ public class SpringSecurityAuditorAware implements AuditorAware<Long> {
   @Override
   public Optional<Long> getCurrentAuditor() {
     Long userId = SecurityUtils.getCurrentUserId();
-    return Optional.ofNullable(userId != null ? userId : 0L);
+    return Optional.ofNullable(userId);
   }
 }
