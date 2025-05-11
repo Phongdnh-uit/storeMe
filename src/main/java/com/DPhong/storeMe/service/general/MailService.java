@@ -1,6 +1,7 @@
 package com.DPhong.storeMe.service.general;
 
 import jakarta.mail.internet.MimeMessage;
+import java.text.MessageFormat;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -23,6 +24,7 @@ public class MailService {
    * @param isMultipart : if the email contains attachments
    * @param isHtml : if the email content is HTML
    */
+  @Async
   public void sendEmail(
       String to, String subject, String content, boolean isMultipart, boolean isHtml) {
 
@@ -44,6 +46,7 @@ public class MailService {
    * @param templateName : name of the email template
    * @param model : model data to be used in the template
    */
+  @Async
   public void sendEmailFromTemplate(
       String to, String subject, String templateName, Map<String, Object> model) {
     Context context = new Context();
@@ -53,6 +56,15 @@ public class MailService {
   }
 
   @Async
-  public void sendActivationEmail(
-      String to, String subject, String templateName, Map<String, Object> model) {}
+  public void sendActivationEmail(String to, Long userId, String code) {
+
+    String activationLink =
+        MessageFormat.format(
+            "http://localhost:8080/api/v1/auth/verify-email?userId={0}&code={1}", userId, code);
+
+    String subject = "Xác thực tài khoản StoreMe";
+    String templateName = "activationEmail";
+    Map<String, Object> model = Map.of("activationLink", activationLink);
+    sendEmailFromTemplate(to, subject, templateName, model);
+  }
 }

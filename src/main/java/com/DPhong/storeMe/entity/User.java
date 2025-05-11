@@ -6,7 +6,9 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -34,4 +36,10 @@ public class User extends BaseEntity {
   @Column(nullable = false)
   @Enumerated(EnumType.STRING)
   private LoginProvider loginProvider;
+
+  @OneToMany(mappedBy = "user")
+  private List<Verification> verifications;
+
+  @OneToMany(mappedBy = "user")
+  private List<RefreshToken> refreshTokens;
 }

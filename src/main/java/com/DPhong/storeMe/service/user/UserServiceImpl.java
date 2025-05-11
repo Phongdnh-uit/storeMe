@@ -39,8 +39,6 @@ public class UserServiceImpl implements UserService {
         .setEmail(registerRequestDTO.getEmail())
         .setPasswordHash(passwordEncoder.encode(registerRequestDTO.getPassword()))
         .setStatus(UserStatus.UNVERIFIED);
-
-    // TODO: send verification email
     user = userRepository.save(user);
     return userMapper.entityToResponse(user);
   }
@@ -78,6 +76,16 @@ public class UserServiceImpl implements UserService {
       throw new BadRequestException("Old password is incorrect");
     }
     user.setPasswordHash(passwordEncoder.encode(changePasswordRequestDTO.getNewPassword()));
+    userRepository.save(user);
+  }
+
+  @Override
+  public void updateStatus(Long userId, UserStatus status) {
+    User user =
+        userRepository
+            .findById(userId)
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+    user.setStatus(status);
     userRepository.save(user);
   }
 
