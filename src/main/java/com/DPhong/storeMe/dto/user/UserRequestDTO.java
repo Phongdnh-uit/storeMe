@@ -15,5 +15,13 @@ public class UserRequestDTO {
       message = "Username must be 3-20 characters long and can only contain letters and numbers")
   private String username;
 
+  @NotBlank
+  @Pattern(
+      regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)[a-zA-Z\\d]{8,20}$",
+      message =
+          "Password must be 8-20 characters long and contain at least one uppercase letter, one"
+              + " lowercase letter, and one number")
+  private String password;
+
   @NotBlank @Email private String email;
 }

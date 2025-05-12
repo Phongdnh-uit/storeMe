@@ -24,6 +24,18 @@ public abstract class GenericService<E, I, O> implements CrudService<E, Long, I,
   protected final GenericMapper<E, I, O> mapper;
   protected final Class<E> entityClass;
 
+  /**
+   * @param id the id of the entity to find
+   * @return the entity with the given id
+   * @throws ResourceNotFoundException if the entity is not found
+   */
+  protected E findByIdOrThrow(Long id) {
+    return repository
+        .findById(id)
+        .orElseThrow(
+            () -> new ResourceNotFoundException(entityClass.getSimpleName() + " not found"));
+  }
+
   @Override
   public PageResponse<O> findAll(Specification<E> specification, Pageable pageable) {
     Page<E> page = repository.findAll(specification, pageable);
@@ -37,44 +49,52 @@ public abstract class GenericService<E, I, O> implements CrudService<E, Long, I,
 
   @Override
   public O findById(Long id) {
-    return repository
-        .findById(id)
-        .map(mapper::entityToResponse)
-        .orElseThrow(() -> new ResourceNotFoundException(entityClass.getName() + " not found"));
+    return mapper.entityToResponse(findByIdOrThrow(id));
   }
+
+  // ====================================CREATE==================================
+  protected void beforeCreateMapper(I request) {}
 
   @Override
   public O create(I request) {
+    beforeCreateMapper(request);
     E entity = mapper.requestToEntity(request);
+    afterCreateMapper(request, entity);
     E savedEntity = repository.save(entity);
     return mapper.entityToResponse(savedEntity);
   }
 
+  protected void afterCreateMapper(I request, E entity) {}
+
+  // =====================================UPDATE================================
+  /** This function will be call berore the update mapper. after check the entity is exists. */
+  protected void beforeUpdateMapper(Long id, I request) {}
+
   @Override
   public O update(Long id, I request) {
-    E entity =
-        repository
-            .findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException(entityClass.getName() + " not found"));
+    E entity = findByIdOrThrow(id);
+    beforeUpdateMapper(id, request);
     mapper.partialUpdate(request, entity);
+    afterUpdateMapper(id, request, entity);
     entity = repository.save(entity);
     return mapper.entityToResponse(entity);
   }
 
+  protected void afterUpdateMapper(Long id, I request, E entity) {}
+
+  // =======================================DELETE================================
   @Override
   public void delete(Long id) {
-    E entity =
-        repository
-            .findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException(entityClass.getName() + " not found"));
+    E entity = findByIdOrThrow(id);
     repository.delete(entity);
   }
 
+  // ========================================DELETE-ALL===========================
   @Override
   public void deleteAllById(Iterable<Long> ids) {
     List<E> entities = repository.findAllById(ids);
     if (entities.size() != StreamSupport.stream(ids.spliterator(), false).count()) {
-      throw new ResourceNotFoundException("Some " + entityClass.getName() + " not found");
+      throw new ResourceNotFoundException("Some " + entityClass.getSimpleName() + " not found");
     }
     repository.deleteAll(entities);
   }

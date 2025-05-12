@@ -25,3 +25,7 @@ jwt:
   secret: cai-secretkey-nay-dung-de-test-thoi-khong-dung-thuc-te-va-yeu-cau-do-dai-secret-512bit
   access-token-expiration: 3600000
   refresh-token-expiration: 86400000
+
+storage:
+  root:
+    location: ${HOME}/Desktop/MyProject/store-me-storage

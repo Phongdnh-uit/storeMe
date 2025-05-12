@@ -8,6 +8,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
@@ -38,8 +39,14 @@ public class User extends BaseEntity {
   private LoginProvider loginProvider;
 
   @OneToMany(mappedBy = "user")
-  private List<Verification> verifications;
+  private List<Verification> verifications = new ArrayList<>();
 
   @OneToMany(mappedBy = "user")
-  private List<RefreshToken> refreshTokens;
+  private List<RefreshToken> refreshTokens = new ArrayList<>();
+
+  @OneToMany(mappedBy = "user")
+  private List<Folder> folders = new ArrayList<>();
+
+  @OneToMany(mappedBy = "user")
+  private List<File> files = new ArrayList<>();
 }
