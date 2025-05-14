@@ -10,6 +10,8 @@ import lombok.Setter;
 @Setter
 public class RegisterRequestDTO {
 
+  @NotBlank @Email private String email;
+
   @NotBlank
   @Pattern(
       regexp = "^[a-zA-Z0-9]{3,20}$",
@@ -23,6 +25,4 @@ public class RegisterRequestDTO {
           "Password must be 8-20 characters long and contain at least one uppercase letter, one"
               + " lowercase letter, and one number")
   private String password;
-
-  @NotBlank @Email private String email;
 }

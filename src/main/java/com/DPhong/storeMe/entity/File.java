@@ -34,9 +34,6 @@ public class File extends BaseEntity {
   @JoinColumn(name = "user_id", nullable = false)
   private User user;
 
-  /** The hash of the file, used to check if the file is already uploaded */
-  private String hash;
-
   private Instant lastAccessed;
 
   @ManyToOne

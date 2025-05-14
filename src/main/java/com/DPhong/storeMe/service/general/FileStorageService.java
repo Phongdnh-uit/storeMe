@@ -1,5 +1,8 @@
 package com.DPhong.storeMe.service.general;
 
+import org.springframework.core.io.Resource;
+import org.springframework.web.multipart.MultipartFile;
+
 public interface FileStorageService {
 
   /** Init the storage folder */
@@ -11,13 +14,11 @@ public interface FileStorageService {
 
   void deleteFolder(String path);
 
-  // void store(MultipartFile file);
+  void renameFolder(String path, String oldName, String newName);
 
-  // Stream<Path> loadAll();
+  String storeFile(String path, MultipartFile file);
 
-  // Path load(String filename);
+  Resource loadFileAsResource(String path);
 
-  // Resource loadAsResource(String filename);
-
-  // void deleteAll();
+  void deleteFile(String path);
 }

@@ -30,14 +30,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 @RequiredArgsConstructor
 public abstract class GenericController<E, I, O> {
   private final CrudService<E, Long, I, O> genericService;
-  private final Class<E> entityClass;
 
   @Operation(
-      summary = "Lấy danh sách các " + "${entityClass.simpleName}",
+      summary = "Lấy danh sách các thông tin của thực thể",
       description =
-          "Lấy danh sách các "
-              + "${entityClass.simpleName}"
-              + " với phân trang và bộ lọc thông qua cú pháp truy vấn turkraft/springfilter")
+          "Lấy danh sách các thực thể với phân trang và bộ lọc thông qua cú pháp truy vấn"
+              + " turkraft/springfilter. \n"
+              + " Về biểu thức truy vấn, bạn có thể xem qua tại đây:"
+              + " https://github.com/turkraft/springfilter")
   @GetMapping
   public ResponseEntity<ApiResponse<PageResponse<O>>> getAll(
       @ParameterObject Pageable pageable, @Filter Specification<E> specification) {
@@ -45,30 +45,24 @@ public abstract class GenericController<E, I, O> {
   }
 
   @Operation(
-      summary = "Lấy " + "${entityClass.simpleName}" + " theo id",
-      description =
-          "Lấy "
-              + "${entityClass.simpleName}"
-              + " theo id. Nếu không tìm thấy sẽ trả về 404 Not Found")
+      summary = "Lấy thông tin thực thể theo id",
+      description = "Lấy thông tin thực thể theo id. Nếu không tìm thấy sẽ trả về 404 Not Found")
   @GetMapping("/{id}")
   public ResponseEntity<ApiResponse<O>> getById(@PathVariable("id") Long id) {
     return ResponseEntity.ok(ApiResponse.success(genericService.findById(id)));
   }
 
   @Operation(
-      summary = "Tạo mới " + "${entityClass.simpleName}",
-      description = "Tạo mới " + "${entityClass.simpleName}" + " và trả về đối tượng đã tạo")
+      summary = "Tạo mới thực thể",
+      description = "Tạo mới thực thể và trả về đối tượng đã tạo")
   @PostMapping
   public ResponseEntity<ApiResponse<O>> create(@Valid @RequestBody I request) {
     return ResponseEntity.ok(ApiResponse.success(genericService.create(request)));
   }
 
   @Operation(
-      summary = "Cập nhật " + "${entityClass.simpleName}",
-      description =
-          "Cập nhật "
-              + "${entityClass.simpleName}"
-              + " theo id. Nếu không tìm thấy sẽ trả về 404 Not Found")
+      summary = "Cập nhật thực thể theo id",
+      description = "Cập nhật thực thể theo id. Nếu không tìm thấy sẽ trả về 404 Not Found")
   @PutMapping("/{id}")
   public ResponseEntity<ApiResponse<O>> update(
       @PathVariable("id") Long id, @Valid @RequestBody I request) {
@@ -76,11 +70,8 @@ public abstract class GenericController<E, I, O> {
   }
 
   @Operation(
-      summary = "Xóa " + "${entityClass.simpleName}" + " theo id",
-      description =
-          "Xóa "
-              + "${entityClass.simpleName}"
-              + " theo id. Nếu không tìm thấy sẽ trả về 404 Not Found")
+      summary = "Xóa thực thể theo id",
+      description = "Xóa thực thể theo id. Nếu không tìm thấy sẽ trả về 404 Not Found")
   @DeleteMapping("/{id}")
   public ResponseEntity<ApiResponse<Void>> delete(@PathVariable("id") Long id) {
     genericService.delete(id);
@@ -88,11 +79,9 @@ public abstract class GenericController<E, I, O> {
   }
 
   @Operation(
-      summary = "Xóa nhiều " + "${entityClass.simpleName}" + " theo id",
+      summary = "Xóa nhiều thực thể theo danh sách id",
       description =
-          "Xóa nhiều "
-              + "${entityClass.simpleName}"
-              + " theo id. Nếu không tìm thấy sẽ trả về 404 Not Found")
+          "Xóa nhiều thực thể theo danh sách id. Nếu không tìm thấy sẽ trả về 404 Not Found")
   @DeleteMapping
   public ResponseEntity<ApiResponse<Void>> deleteAll(@RequestBody List<Long> ids) {
     genericService.deleteAllById(ids);

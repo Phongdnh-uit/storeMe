@@ -1,6 +1,7 @@
 package com.DPhong.storeMe.service.folder;
 
 import com.DPhong.storeMe.constant.ResourceLocation;
+import com.DPhong.storeMe.dto.PageResponse;
 import com.DPhong.storeMe.dto.folder.FolderRequestDTO;
 import com.DPhong.storeMe.dto.folder.FolderResponseDTO;
 import com.DPhong.storeMe.entity.Folder;
@@ -15,6 +16,9 @@ import com.DPhong.storeMe.service.general.FileStorageService;
 import jakarta.annotation.PostConstruct;
 import java.util.List;
 import java.util.stream.StreamSupport;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -34,6 +38,21 @@ public class FolderServiceImpl extends GenericService<Folder, FolderRequestDTO, 
     this.fileStorageService = fileStorageService;
   }
 
+  @Override
+  public PageResponse<FolderResponseDTO> findAll(
+      Specification<Folder> specification, Pageable pageable) {
+    Page<Folder> page =
+        ((FolderRepository) repository)
+            .findAllByUserIdAndParentFolderIdIsNull(
+                SecurityUtils.getCurrentUserId(), specification, pageable);
+    return new PageResponse<FolderResponseDTO>()
+        .setContent(page.getContent().stream().map(mapper::entityToResponse).toList())
+        .setNumber(page.getNumber())
+        .setSize(page.getSize())
+        .setTotalElements(page.getTotalElements())
+        .setTotalPages(page.getTotalPages());
+  }
+
   /** this method is used to initialize the USER_STORAGE_ROOT folder for the user */
   @PostConstruct
   private void init() {
@@ -44,15 +63,28 @@ public class FolderServiceImpl extends GenericService<Folder, FolderRequestDTO, 
 
   @Override
   protected void beforeCreateMapper(FolderRequestDTO folderRequestDTO) {
+    // get the current user id from security context
+    Long userId = SecurityUtils.getCurrentUserId();
+
+    Folder parentFolder = null;
     if (folderRequestDTO.getParentId() != null) {
-      if (((FolderRepository) repository)
-          .existsByNameAndParentFolderId(
-              folderRequestDTO.getName(), folderRequestDTO.getParentId())) {
-        throw new ResourceNotFoundException(
-            "Folder with name "
-                + folderRequestDTO.getName()
-                + " already exists in this parent folder");
+      parentFolder =
+          ((FolderRepository) repository)
+              .findById(folderRequestDTO.getParentId())
+              .orElseThrow(() -> new ResourceNotFoundException("Parent folder not found"));
+      if (parentFolder.getUser().getId() != userId) {
+        throw new ResourceNotFoundException("Parent folder not belong to this user");
       }
+    } else {
+      parentFolder =
+          ((FolderRepository) repository)
+              .findByUserIdAndParentIdIsNull(userId)
+              .orElseThrow(
+                  () -> new ResourceNotFoundException("Root folder have not been created"));
+    }
+    if (parentFolder.getSubFolders().stream()
+        .anyMatch(f -> f.getName().equals(folderRequestDTO.getName()))) {
+      throw new ResourceNotFoundException("Folder name already exists");
     }
   }
 
@@ -70,29 +102,41 @@ public class FolderServiceImpl extends GenericService<Folder, FolderRequestDTO, 
 
     String path = "";
 
+    Folder parentFolder = null;
+
     // check if the parent folder is null or not
     if (folderRequestDTO.getParentId() != null) {
-      Folder parentFolder =
+      parentFolder =
           ((FolderRepository) repository)
               .findById(folderRequestDTO.getParentId())
               .orElseThrow(() -> new ResourceNotFoundException("Parent folder not found"));
-      if (user.getId() != parentFolder.getUser().getId()) {
+      if (parentFolder.getUser().getId() != userId) {
         throw new ResourceNotFoundException("Parent folder not belong to this user");
       }
-      entity.setParentFolder(parentFolder);
-      path = fileStorageService.createFolder(parentFolder.getPath(), folderRequestDTO.getName());
     } else {
-      String userFolderPath =
-          fileStorageService.createFolder(ResourceLocation.USER_STORAGE_ROOT, user.getUsername());
-      path = fileStorageService.createFolder(userFolderPath, folderRequestDTO.getName());
+      parentFolder =
+          ((FolderRepository) repository)
+              .findByUserIdAndParentIdIsNull(userId)
+              .orElseThrow(
+                  () -> new ResourceNotFoundException("Root folder have not been created"));
     }
+    path = fileStorageService.createFolder(parentFolder.getPath(), folderRequestDTO.getName());
+    entity.setParentFolder(parentFolder);
     entity.setUser(user);
     entity.setPath(path);
   }
 
   @Override
+  protected void beforeUpdateMapper(Long id, FolderRequestDTO request, Folder old) {
+    fileStorageService.renameFolder(old.getPath(), old.getName(), request.getName());
+  }
+
+  @Override
   public void delete(Long id) {
     Folder folder = findByIdOrThrow(id);
+    if (folder.getParentFolder() == null) {
+      throw new ResourceNotFoundException("Root folder can not be deleted");
+    }
     deleteSubFolder(folder);
     fileStorageService.deleteFolder(folder.getPath());
     repository.delete(folder);
@@ -105,6 +149,9 @@ public class FolderServiceImpl extends GenericService<Folder, FolderRequestDTO, 
       throw new ResourceNotFoundException("Some " + Folder.class.getSimpleName() + " not found");
     }
     for (Folder folder : folders) {
+      if (folder.getParentFolder() == null) {
+        throw new ResourceNotFoundException("Root folder can not be deleted");
+      }
       deleteSubFolder(folder);
       fileStorageService.deleteFolder(folder.getPath());
     }

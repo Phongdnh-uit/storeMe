@@ -68,19 +68,19 @@ public abstract class GenericService<E, I, O> implements CrudService<E, Long, I,
 
   // =====================================UPDATE================================
   /** This function will be call berore the update mapper. after check the entity is exists. */
-  protected void beforeUpdateMapper(Long id, I request) {}
+  protected void beforeUpdateMapper(Long id, I request, E oldEntity) {}
 
   @Override
   public O update(Long id, I request) {
     E entity = findByIdOrThrow(id);
-    beforeUpdateMapper(id, request);
+    beforeUpdateMapper(id, request, entity);
     mapper.partialUpdate(request, entity);
     afterUpdateMapper(id, request, entity);
     entity = repository.save(entity);
     return mapper.entityToResponse(entity);
   }
 
-  protected void afterUpdateMapper(Long id, I request, E entity) {}
+  protected void afterUpdateMapper(Long id, I request, E newEntity) {}
 
   // =======================================DELETE================================
   @Override

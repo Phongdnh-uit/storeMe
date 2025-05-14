@@ -1,9 +1,9 @@
 package com.DPhong.storeMe.dto.folder;
 
-import java.util.List;
-
+import com.DPhong.storeMe.dto.file.FileResponseDTO;
 import com.DPhong.storeMe.dto.user.UserResponseDTO;
 import com.DPhong.storeMe.entity.BaseEntity;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -20,5 +20,5 @@ public class FolderResponseDTO extends BaseEntity {
 
   private List<FolderResponseDTO> subFolders;
 
-  // private List<File> files;
+  private List<FileResponseDTO> files;
 }
