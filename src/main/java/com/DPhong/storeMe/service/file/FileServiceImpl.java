@@ -51,7 +51,7 @@ public class FileServiceImpl implements FileService {
     } else {
       parentFolder =
           folderRepository
-              .findByUserIdAndParentIdIsNull(SecurityUtils.getCurrentUserId())
+              .findByUserIdAndParentFolderIdIsNull(SecurityUtils.getCurrentUserId())
               .orElseThrow(() -> new ResourceNotFoundException("Root folder not found"));
     }
     List<FileResponseDTO> result = new ArrayList<>();

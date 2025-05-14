@@ -78,7 +78,7 @@ public class FolderServiceImpl extends GenericService<Folder, FolderRequestDTO, 
     } else {
       parentFolder =
           ((FolderRepository) repository)
-              .findByUserIdAndParentIdIsNull(userId)
+              .findByUserIdAndParentFolderIdIsNull(userId)
               .orElseThrow(
                   () -> new ResourceNotFoundException("Root folder have not been created"));
     }
@@ -116,7 +116,7 @@ public class FolderServiceImpl extends GenericService<Folder, FolderRequestDTO, 
     } else {
       parentFolder =
           ((FolderRepository) repository)
-              .findByUserIdAndParentIdIsNull(userId)
+              .findByUserIdAndParentFolderIdIsNull(userId)
               .orElseThrow(
                   () -> new ResourceNotFoundException("Root folder have not been created"));
     }

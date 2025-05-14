@@ -10,7 +10,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface FolderRepository extends SimpleRepository<Folder, Long> {
 
-  Optional<Folder> findByUserIdAndParentIdIsNull(Long userId);
+  Optional<Folder> findByUserIdAndParentFolderIdIsNull(Long userId);
 
   Page<Folder> findAllByUserIdAndParentFolderIdIsNull(
       Long userId, Specification<Folder> specification, Pageable pageable);

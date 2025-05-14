@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "File", description = "Endpoint quản lý file")
 @RequiredArgsConstructor
-@RequestMapping(AppConstant.BASE_URL + "/file")
+@RequestMapping(AppConstant.BASE_URL + "/files")
 @RestController
 public class FileController {
 
@@ -49,7 +49,7 @@ public class FileController {
 
   @Operation(summary = "Xem trước file")
   @PostMapping(
-      name = "/preview/{id}",
+      value = "/preview/{id}",
       consumes = MediaType.APPLICATION_JSON_VALUE,
       produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
   public ResponseEntity<Resource> previewFile(@PathVariable("id") Long id) {
@@ -62,7 +62,7 @@ public class FileController {
 
   @Operation(summary = "Download file")
   @PostMapping(
-      name = "/download/{id}",
+      value = "/download/{id}",
       consumes = MediaType.APPLICATION_JSON_VALUE,
       produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
   public ResponseEntity<Resource> downloadFile(@PathVariable("id") Long id) {
