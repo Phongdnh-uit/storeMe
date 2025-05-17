@@ -8,6 +8,8 @@ import lombok.Setter;
 @Setter
 public class StoragePlanResponseDTO extends BaseEntity {
   private String name;
-  private String description;
+  private Double price;
+  private Long timeOfPlan;
   private Long storageLimit;
+  private String description;
 }

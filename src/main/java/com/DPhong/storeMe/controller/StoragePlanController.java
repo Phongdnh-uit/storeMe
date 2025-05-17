@@ -11,7 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Storage Plan", description = "Storage Plan API")
+@Tag(name = "Storage Plan", description = "Các gói lưu trữ")
 @RequestMapping(AppConstant.BASE_URL + "/storage-plans")
 @RestController
 public class StoragePlanController

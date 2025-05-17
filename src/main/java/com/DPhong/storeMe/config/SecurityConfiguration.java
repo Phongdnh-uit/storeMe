@@ -18,7 +18,7 @@ public class SecurityConfiguration {
   private final String[] whiteList = {
     BASE_URL + "/auth/login",
     BASE_URL + "/auth/register",
-    BASE_URL + "/auth/refresh-token",
+    BASE_URL + "/auth/refresh",
     BASE_URL + "/auth/verify-email",
     BASE_URL + "/auth/forgot-password",
     BASE_URL + "/auth/reset-password",

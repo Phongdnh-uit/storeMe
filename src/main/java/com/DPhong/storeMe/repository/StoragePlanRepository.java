@@ -4,4 +4,6 @@ import com.DPhong.storeMe.entity.StoragePlan;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface StoragePlanRepository extends SimpleRepository<StoragePlan, Long> {}
+public interface StoragePlanRepository extends SimpleRepository<StoragePlan, Long> {
+  boolean existsByName(String name);
+}

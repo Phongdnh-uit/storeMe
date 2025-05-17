@@ -1,12 +1,14 @@
 package com.DPhong.storeMe.dto.file;
 
 import java.time.Instant;
+
+import com.DPhong.storeMe.entity.BaseEntity;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-public class FileResponseDTO {
+public class FileResponseDTO extends BaseEntity {
   private String name;
 
   private Long size;

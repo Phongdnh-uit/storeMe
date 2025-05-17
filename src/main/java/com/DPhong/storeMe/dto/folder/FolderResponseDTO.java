@@ -18,6 +18,8 @@ public class FolderResponseDTO extends BaseEntity {
 
   private UserResponseDTO user;
 
+  private Long parentFolderId;
+
   private List<FolderResponseDTO> subFolders;
 
   private List<FileResponseDTO> files;

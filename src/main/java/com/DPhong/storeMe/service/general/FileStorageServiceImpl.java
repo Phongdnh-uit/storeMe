@@ -89,7 +89,7 @@ public class FileStorageServiceImpl implements FileStorageService {
       throw new StorageException("Folder already exists: " + newName);
     }
     try {
-      Files.move(oldFolderPath, newFolderPath, StandardCopyOption.ATOMIC_MOVE);
+      Files.move(oldFolderPath, newFolderPath, StandardCopyOption.REPLACE_EXISTING);
     } catch (Exception e) {
       throw new StorageException("Could not rename folder: " + oldName, e);
     }
@@ -160,7 +160,7 @@ public class FileStorageServiceImpl implements FileStorageService {
         throw new StorageException("File already exists: " + file.getOriginalFilename());
       }
       try (InputStream inputStream = file.getInputStream()) {
-        Files.copy(inputStream, targetLocation, StandardCopyOption.ATOMIC_MOVE);
+        Files.copy(inputStream, targetLocation, StandardCopyOption.REPLACE_EXISTING);
       }
       return rootPath.relativize(targetLocation).toString();
     } catch (Exception e) {

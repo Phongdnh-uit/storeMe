@@ -31,6 +31,9 @@ public class User extends BaseEntity {
   private String passwordHash;
 
   @Column(nullable = false)
+  private Long totalUsage;
+
+  @Column(nullable = false)
   @Enumerated(EnumType.STRING)
   private UserStatus status;
 
@@ -49,4 +52,7 @@ public class User extends BaseEntity {
 
   @OneToMany(mappedBy = "user")
   private List<File> files = new ArrayList<>();
+
+  @OneToMany(mappedBy = "user")
+  private List<UserPlan> userPlans = new ArrayList<>();
 }

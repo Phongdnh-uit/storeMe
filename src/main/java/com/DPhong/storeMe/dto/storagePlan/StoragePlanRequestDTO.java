@@ -1,5 +1,6 @@
 package com.DPhong.storeMe.dto.storagePlan;
 
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
@@ -11,8 +12,14 @@ public class StoragePlanRequestDTO {
   @NotBlank(message = "Name is required")
   private String name;
 
-  private String description;
+  @NotNull(message = "Price is required")
+  private Double price;
+
+  private Long timeOfPlan;
 
   @NotNull(message = "Storage limit is required")
+  @Min(value = 0, message = "Storage limit must be greater than or equal to 0")
   private Long storageLimit;
+
+  private String description;
 }

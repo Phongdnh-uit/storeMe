@@ -40,7 +40,7 @@ public class FileController {
   }
 
   @Operation(summary = "Tải lên file")
-  @PostMapping("/upload")
+  @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ResponseEntity<ApiResponse<List<FileResponseDTO>>> uploadFile(
       @Valid @ModelAttribute FileRequestDTO fileRequestDTO) {
     List<FileResponseDTO> fileResponseDTOs = fileService.uploadFile(fileRequestDTO);
@@ -50,7 +50,6 @@ public class FileController {
   @Operation(summary = "Xem trước file")
   @PostMapping(
       value = "/preview/{id}",
-      consumes = MediaType.APPLICATION_JSON_VALUE,
       produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
   public ResponseEntity<Resource> previewFile(@PathVariable("id") Long id) {
     Resource resource = fileService.serveFile(id);
@@ -63,7 +62,6 @@ public class FileController {
   @Operation(summary = "Download file")
   @PostMapping(
       value = "/download/{id}",
-      consumes = MediaType.APPLICATION_JSON_VALUE,
       produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
   public ResponseEntity<Resource> downloadFile(@PathVariable("id") Long id) {
     Resource resource = fileService.serveFile(id);

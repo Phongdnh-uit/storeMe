@@ -4,11 +4,15 @@ import com.DPhong.storeMe.dto.file.FileRequestDTO;
 import com.DPhong.storeMe.dto.file.FileResponseDTO;
 import com.DPhong.storeMe.entity.File;
 import com.DPhong.storeMe.entity.Folder;
+import com.DPhong.storeMe.entity.User;
+import com.DPhong.storeMe.entity.UserPlan;
 import com.DPhong.storeMe.exception.BadRequestException;
 import com.DPhong.storeMe.exception.ResourceNotFoundException;
 import com.DPhong.storeMe.mapper.FileMapper;
 import com.DPhong.storeMe.repository.FileRepository;
 import com.DPhong.storeMe.repository.FolderRepository;
+import com.DPhong.storeMe.repository.UserPlanRepository;
+import com.DPhong.storeMe.repository.UserRepository;
 import com.DPhong.storeMe.security.SecurityUtils;
 import com.DPhong.storeMe.service.general.FileStorageService;
 import com.DPhong.storeMe.service.general.TikaAnalysis;
@@ -27,9 +31,11 @@ import org.springframework.web.multipart.MultipartFile;
 public class FileServiceImpl implements FileService {
 
   private final FolderRepository folderRepository;
+  private final UserPlanRepository userPlanRepository;
   private final FileRepository fileRepository;
   private final FileStorageService fileStorageService;
   private final FileMapper fileMapper;
+  private final UserRepository userRepository;
 
   @Override
   public FileResponseDTO getFileInfo(Long id) {
@@ -39,20 +45,20 @@ public class FileServiceImpl implements FileService {
 
   @Override
   public List<FileResponseDTO> uploadFile(FileRequestDTO fileRequestDTO) {
-    Folder parentFolder = null;
-    if (fileRequestDTO.getFolderId() != null) {
-      parentFolder =
-          folderRepository
-              .findById(fileRequestDTO.getFolderId())
-              .orElseThrow(() -> new ResourceNotFoundException("Folder not found "));
-      if (parentFolder.getUser().getId() != SecurityUtils.getCurrentUserId()) {
-        throw new BadRequestException("Folder does not belong to user");
-      }
-    } else {
-      parentFolder =
-          folderRepository
-              .findByUserIdAndParentFolderIdIsNull(SecurityUtils.getCurrentUserId())
-              .orElseThrow(() -> new ResourceNotFoundException("Root folder not found"));
+    Folder parentFolder = findParentFolder(fileRequestDTO.getFolderId());
+
+    User user = parentFolder.getUser();
+
+    UserPlan currentPlan =
+        userPlanRepository
+            .findByUserIdAndIsActiveTrue(user.getId())
+            .orElseThrow(() -> new ResourceNotFoundException("User not register any plan"));
+    Long totalSize = 0L;
+    for (MultipartFile fileRequest : fileRequestDTO.getFiles()) {
+      totalSize += fileRequest.getSize();
+    }
+    if (user.getTotalUsage() + totalSize >= currentPlan.getStoragePlan().getStorageLimit()) {
+      throw new BadRequestException("Not enough space in plan");
     }
     List<FileResponseDTO> result = new ArrayList<>();
     for (MultipartFile fileRequest : fileRequestDTO.getFiles()) {
@@ -60,7 +66,7 @@ public class FileServiceImpl implements FileService {
       file.setName(fileRequest.getOriginalFilename());
       file.setSize(fileRequest.getSize());
       file.setFolder(parentFolder);
-      file.setUser(parentFolder.getUser());
+      file.setUser(user);
       file.setPath(fileStorageService.storeFile(parentFolder.getPath(), fileRequest));
       // try with resource to close the stream
       try (InputStream inputStream = fileRequest.getInputStream()) {
@@ -72,7 +78,9 @@ public class FileServiceImpl implements FileService {
       file.setLastAccessed(Instant.now());
       file = fileRepository.save(file);
       result.add(fileMapper.entityToResponse(file));
+      user.setTotalUsage(user.getTotalUsage() + file.getSize());
     }
+    userRepository.save(user);
     return result;
   }
 
@@ -96,6 +104,9 @@ public class FileServiceImpl implements FileService {
   public void deleteFile(Long id) {
     File file = getOrThrowFile(id);
     fileStorageService.deleteFile(file.getPath());
+    User user = file.getUser();
+    user.setTotalUsage(user.getTotalUsage() - file.getSize());
+    userRepository.save(user);
     fileRepository.delete(file);
   }
 
@@ -110,6 +121,9 @@ public class FileServiceImpl implements FileService {
         throw new BadRequestException("File does not belong to user");
       }
       fileStorageService.deleteFile(file.getPath());
+      User user = file.getUser();
+      user.setTotalUsage(user.getTotalUsage() - file.getSize());
+      userRepository.save(user);
       fileRepository.delete(file);
     }
   }
@@ -128,5 +142,24 @@ public class FileServiceImpl implements FileService {
       throw new BadRequestException("File does not belong to user");
     }
     return file;
+  }
+
+  private Folder findParentFolder(Long folderId) {
+    Folder parentFolder = null;
+    if (folderId != null) {
+      parentFolder =
+          folderRepository
+              .findById(folderId)
+              .orElseThrow(() -> new ResourceNotFoundException("Folder not found "));
+      if (parentFolder.getUser().getId() != SecurityUtils.getCurrentUserId()) {
+        throw new BadRequestException("Folder does not belong to user");
+      }
+    } else {
+      parentFolder =
+          folderRepository
+              .findByUserIdAndParentFolderIdIsNull(SecurityUtils.getCurrentUserId())
+              .orElseThrow(() -> new ResourceNotFoundException("Root folder not found"));
+    }
+    return parentFolder;
   }
 }
