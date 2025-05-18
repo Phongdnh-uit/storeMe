@@ -18,8 +18,13 @@ public class ApiResponse<T> {
   private int statusCode;
   private String message;
   private T data;
+  private ErrorVO error;
 
   public static <T> ApiResponse<T> success(T data) {
-    return new ApiResponse<>(HttpStatus.OK.value(), "success", data);
+    return new ApiResponse<>(HttpStatus.OK.value(), "success", data, null);
+  }
+
+  public static ApiResponse<Void> error(int code, String message, ErrorVO error) {
+    return new ApiResponse<>(code, message, null, error);
   }
 }
