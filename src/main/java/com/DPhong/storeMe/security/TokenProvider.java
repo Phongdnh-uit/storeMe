@@ -1,5 +1,8 @@
 package com.DPhong.storeMe.security;
 
+import com.DPhong.storeMe.entity.User;
+import com.DPhong.storeMe.exception.ResourceNotFoundException;
+import com.DPhong.storeMe.repository.UserRepository;
 import java.time.Instant;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,6 +22,7 @@ public class TokenProvider {
 
   public static final MacAlgorithm JWT_ALGORITHM = MacAlgorithm.HS512;
 
+  private final UserRepository userRepository;
   private final JwtEncoder jwtEncoder;
   private final JwtDecoder jwtDecoder;
 
@@ -26,12 +30,18 @@ public class TokenProvider {
   private Long expirationTime;
 
   public String generateAccessToken(Long userId) {
+    User user =
+        userRepository
+            .findById(userId)
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     Instant now = Instant.now();
     Instant expiration = now.plusMillis(expirationTime);
-
     JwtClaimsSet claims =
         JwtClaimsSet.builder()
             .subject(userId.toString())
+            .claim("role", user.getRole().getName())
+            .claim("username", user.getUsername())
+            .claim("login_provider", user.getLoginProvider().toString())
             .issuedAt(now)
             .expiresAt(expiration)
             .build();

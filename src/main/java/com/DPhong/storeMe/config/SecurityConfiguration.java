@@ -1,6 +1,7 @@
 package com.DPhong.storeMe.config;
 
 import com.DPhong.storeMe.constant.AppConstant;
+import com.DPhong.storeMe.constant.RoleConstant;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -26,6 +27,10 @@ public class SecurityConfiguration {
     "/v3/api-docs/**"
   };
 
+  private final String[] whiteListAdmin = {
+    BASE_URL + "/storage-plans/**", BASE_URL + "/roles/**",
+  };
+
   @Bean
   PasswordEncoder passwordEncoder() {
     return new BCryptPasswordEncoder();
@@ -36,7 +41,13 @@ public class SecurityConfiguration {
       HttpSecurity http, JwtAuthenticationConverter jwtAuthenticationConverter) throws Exception {
     http.csrf(AbstractHttpConfigurer::disable)
         .authorizeHttpRequests(
-            auth -> auth.requestMatchers(whiteList).permitAll().anyRequest().authenticated())
+            auth ->
+                auth.requestMatchers(whiteList)
+                    .permitAll()
+                    .requestMatchers(whiteListAdmin)
+                    .hasRole(RoleConstant.ROLE_ADMIN)
+                    .anyRequest()
+                    .authenticated())
         .oauth2ResourceServer(
             oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter)))
         .formLogin(AbstractHttpConfigurer::disable)

@@ -5,4 +5,6 @@ import com.DPhong.storeMe.dto.role.RoleResponseDTO;
 import com.DPhong.storeMe.entity.Role;
 import com.DPhong.storeMe.service.CrudService;
 
-public interface RoleService extends CrudService<Role, Long, RoleRequestDTO, RoleResponseDTO> {}
+public interface RoleService extends CrudService<Role, Long, RoleRequestDTO, RoleResponseDTO> {
+  void assignRoleToUser(Long id, Long userId);
+}

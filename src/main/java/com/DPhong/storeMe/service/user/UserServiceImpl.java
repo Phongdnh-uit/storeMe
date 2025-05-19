@@ -1,17 +1,21 @@
 package com.DPhong.storeMe.service.user;
 
 import com.DPhong.storeMe.constant.ResourceLocation;
+import com.DPhong.storeMe.constant.RoleConstant;
 import com.DPhong.storeMe.dto.authentication.ChangePasswordRequestDTO;
 import com.DPhong.storeMe.dto.authentication.RegisterRequestDTO;
 import com.DPhong.storeMe.dto.user.UserResponseDTO;
 import com.DPhong.storeMe.entity.Folder;
+import com.DPhong.storeMe.entity.Role;
 import com.DPhong.storeMe.entity.User;
+import com.DPhong.storeMe.enums.LoginProvider;
 import com.DPhong.storeMe.enums.UserStatus;
 import com.DPhong.storeMe.exception.BadRequestException;
 import com.DPhong.storeMe.exception.DataConflictException;
 import com.DPhong.storeMe.exception.ResourceNotFoundException;
 import com.DPhong.storeMe.mapper.UserMapper;
 import com.DPhong.storeMe.repository.FolderRepository;
+import com.DPhong.storeMe.repository.RoleRepository;
 import com.DPhong.storeMe.repository.UserRepository;
 import com.DPhong.storeMe.security.SecurityUtils;
 import com.DPhong.storeMe.service.general.FileStorageService;
@@ -29,6 +33,7 @@ public class UserServiceImpl implements UserService {
   private final UserMapper userMapper;
   private final FileStorageService fileStorageService;
   private final FolderRepository folderRepository;
+  private final RoleRepository roleRepository;
   private final PasswordEncoder passwordEncoder;
 
   /**
@@ -45,6 +50,13 @@ public class UserServiceImpl implements UserService {
         .setEmail(registerRequestDTO.getEmail())
         .setPasswordHash(passwordEncoder.encode(registerRequestDTO.getPassword()))
         .setStatus(UserStatus.UNVERIFIED);
+    user.setLoginProvider(LoginProvider.LOCAL);
+    // Set the role for the user
+    Role userRole =
+        roleRepository
+            .findByName(RoleConstant.ROLE_USER)
+            .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
+    user.setRole(userRole);
     user = userRepository.save(user);
     // Create a folder for the user, using the user ID as the folder name
     // The folder will be created in the USER_STORAGE_ROOT directory

@@ -5,6 +5,7 @@ import com.DPhong.storeMe.dto.PageResponse;
 import com.DPhong.storeMe.service.CrudService;
 import com.turkraft.springfilter.boot.Filter;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +30,7 @@ import org.springframework.web.bind.annotation.RequestBody;
  */
 @RequiredArgsConstructor
 public abstract class GenericController<E, I, O> {
-  private final CrudService<E, Long, I, O> genericService;
+  protected final CrudService<E, Long, I, O> service;
 
   @Operation(
       summary = "Lấy danh sách các thông tin của thực thể",
@@ -40,8 +41,10 @@ public abstract class GenericController<E, I, O> {
               + " https://github.com/turkraft/springfilter")
   @GetMapping
   public ResponseEntity<ApiResponse<PageResponse<O>>> getAll(
-      @ParameterObject Pageable pageable, @Filter Specification<E> specification) {
-    return ResponseEntity.ok(ApiResponse.success(genericService.findAll(specification, pageable)));
+      @ParameterObject Pageable pageable,
+    @Parameter(name = "filter", description = "Bộ lọc thông qua cú pháp truy vấn turkraft/springfilter", example = "name=eq:abc")
+      @Filter Specification<E> specification) {
+    return ResponseEntity.ok(ApiResponse.success(service.findAll(specification, pageable)));
   }
 
   @Operation(
@@ -49,7 +52,7 @@ public abstract class GenericController<E, I, O> {
       description = "Lấy thông tin thực thể theo id. Nếu không tìm thấy sẽ trả về 404 Not Found")
   @GetMapping("/{id}")
   public ResponseEntity<ApiResponse<O>> getById(@PathVariable("id") Long id) {
-    return ResponseEntity.ok(ApiResponse.success(genericService.findById(id)));
+    return ResponseEntity.ok(ApiResponse.success(service.findById(id)));
   }
 
   @Operation(
@@ -57,7 +60,7 @@ public abstract class GenericController<E, I, O> {
       description = "Tạo mới thực thể và trả về đối tượng đã tạo")
   @PostMapping
   public ResponseEntity<ApiResponse<O>> create(@Valid @RequestBody I request) {
-    return ResponseEntity.ok(ApiResponse.success(genericService.create(request)));
+    return ResponseEntity.ok(ApiResponse.success(service.create(request)));
   }
 
   @Operation(
@@ -66,7 +69,7 @@ public abstract class GenericController<E, I, O> {
   @PutMapping("/{id}")
   public ResponseEntity<ApiResponse<O>> update(
       @PathVariable("id") Long id, @Valid @RequestBody I request) {
-    return ResponseEntity.ok(ApiResponse.success(genericService.update(id, request)));
+    return ResponseEntity.ok(ApiResponse.success(service.update(id, request)));
   }
 
   @Operation(
@@ -74,7 +77,7 @@ public abstract class GenericController<E, I, O> {
       description = "Xóa thực thể theo id. Nếu không tìm thấy sẽ trả về 404 Not Found")
   @DeleteMapping("/{id}")
   public ResponseEntity<ApiResponse<Void>> delete(@PathVariable("id") Long id) {
-    genericService.delete(id);
+    service.delete(id);
     return ResponseEntity.ok(ApiResponse.success(null));
   }
 
@@ -84,7 +87,7 @@ public abstract class GenericController<E, I, O> {
           "Xóa nhiều thực thể theo danh sách id. Nếu không tìm thấy sẽ trả về 404 Not Found")
   @DeleteMapping
   public ResponseEntity<ApiResponse<Void>> deleteAll(@RequestBody List<Long> ids) {
-    genericService.deleteAllById(ids);
+    service.deleteAllById(ids);
     return ResponseEntity.ok(ApiResponse.success(null));
   }
 }

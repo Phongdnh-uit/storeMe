@@ -1,6 +1,8 @@
 package com.DPhong.storeMe.security;
 
 import com.DPhong.storeMe.entity.User;
+import com.DPhong.storeMe.enums.LoginProvider;
+import com.DPhong.storeMe.exception.BadRequestException;
 import com.DPhong.storeMe.repository.UserRepository;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +29,9 @@ public class DomainUserDetailService implements UserDetailsService {
                 () ->
                     new UsernameNotFoundException(
                         "User " + login + " was not found in the database"));
+    if (userFromDatabase.getLoginProvider() != LoginProvider.LOCAL) {
+      throw new BadRequestException("Login provider is not local");
+    }
     switch (userFromDatabase.getStatus()) {
       case UNVERIFIED:
         throw new AccountStatusException("Account is not verified") {};
@@ -41,7 +46,8 @@ public class DomainUserDetailService implements UserDetailsService {
         .id(userFromDatabase.getId())
         .username(userFromDatabase.getEmail())
         .password(userFromDatabase.getPasswordHash())
-        .authorities(Set.of(new SimpleGrantedAuthority("ROLE_USER")))
+        .authorities(
+            Set.of(new SimpleGrantedAuthority("ROLE_" + userFromDatabase.getRole().getName())))
         .build();
   }
 }

@@ -1,6 +1,7 @@
 package com.DPhong.storeMe.config;
 
 import com.DPhong.storeMe.constant.ResourceLocation;
+import com.DPhong.storeMe.constant.RoleConstant;
 import com.DPhong.storeMe.entity.Folder;
 import com.DPhong.storeMe.entity.Role;
 import com.DPhong.storeMe.entity.User;
@@ -41,7 +42,7 @@ public class DatabaseInitialize implements ApplicationRunner {
     admin.setLoginProvider(LoginProvider.LOCAL);
     Role adminRole =
         roleRepository
-            .findByName("admin")
+            .findByName(RoleConstant.ROLE_ADMIN)
             .orElseThrow(() -> new RuntimeException("Initialization error: Role not found"));
     admin.setRole(adminRole);
     admin.setCreatedBy(0L);
