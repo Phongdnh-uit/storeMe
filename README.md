@@ -1,8 +1,6 @@
-
 # Store Me - Hệ thống lưu trữ file
 
 Hệ thống lưu trữ file là một ứng dụng đơn giản giúp người dùng tải lên, quản lý và tải xuống các tệp tin một cách an toàn và hiệu quả. Dự án này được thiết kế để cung cấp một giải pháp lưu trữ file cơ bản, dễ sử dụng và có thể mở rộng.
-
 
 ## Tính năng
 
@@ -12,11 +10,12 @@ Hệ thống lưu trữ file là một ứng dụng đơn giản giúp người 
 - Bảo mật: Đảm bảo file được lưu trữ an toàn với kiểm tra quyền truy cập.
 
 ## Yêu cầu
+
 - JDK: 24
 - GraalVM
 
-
 ## Cài đặt
+
 1. Tải mã nguồn
 
 ```
@@ -24,12 +23,22 @@ Hệ thống lưu trữ file là một ứng dụng đơn giản giúp người 
   cd storeMe
 ```
 
-2. Chạy docker 
+2. Chạy docker
+
 ```
 docker compose up -d
 ```
 
-3. Thêm phụ thuộc vào application.yml
+3. Cấu hình nơi lưu trữ file
+
+```
+storage:
+  root:
+    location: <path-to-store-file>
+```
+
+4. Thêm phụ thuộc vào application.yml
+
 ```
 spring:
   mail:
@@ -42,28 +51,32 @@ spring:
       mail.smtp.starttls.enable: true
       mail.smtp.ssl.trust: smtp.gmail.com
 ```
-4. Chạy dự án
+
+5. Chạy dự án
+
 ```
 ./gradlew build
 ./gradlew bootRun
 ```
+
 ## Cấu trúc thư mục
+
 ```
 storeMe/
-├── config/                  
-├── constant/            
-├── controller/             
-├── dto/              
-├── entity/              
-├── enums/              
-├── exception/              
-├── mapper/              
-├── repository/              
-├── security/              
-├── service/              
+├── config/
+├── constant/
+├── controller/
+├── dto/
+├── entity/
+├── enums/
+├── exception/
+├── mapper/
+├── repository/
+├── security/
+├── service/
 resources
-├── db/                  
-├── static               
-├── templates        
-└── application.yml               
+├── db/
+├── static
+├── templates
+└── application.yml
 ```
