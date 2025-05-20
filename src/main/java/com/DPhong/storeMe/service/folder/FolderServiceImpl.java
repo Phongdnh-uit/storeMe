@@ -29,29 +29,32 @@ public class FolderServiceImpl extends GenericService<Folder, FolderRequestDTO, 
 
     private final UserRepository userRepository;
     private final FileStorageService fileStorageService;
+    private final SecurityUtils securityUtils;
 
     public FolderServiceImpl(
             FolderRepository repository,
             FolderMapper mapper,
             UserRepository userRepository,
+            SecurityUtils securityUtils,
             FileStorageService fileStorageService) {
         super(repository, mapper, Folder.class);
         this.userRepository = userRepository;
         this.fileStorageService = fileStorageService;
+        this.securityUtils = securityUtils;
     }
 
     @Override
     public PageResponse<FolderResponseDTO> findAll(
             Specification<Folder> specification, Pageable pageable) {
         Folder rootFolder = ((FolderRepository) repository)
-                .findByUserIdAndParentFolderIdIsNull(SecurityUtils.getCurrentUserId())
+                .findByUserIdAndParentFolderIdIsNull(securityUtils.getCurrentUserId())
                 .orElseThrow(
                         () -> new ResourceNotFoundException("Root folder have not been created"));
         Specification<Folder> spec =
                 (root, query, criteriaBuilder) ->
                         criteriaBuilder.and(
                                 criteriaBuilder.equal(root.get("parentFolder").get("id"), rootFolder.getId()),
-                                criteriaBuilder.equal(root.get("user").get("id"), SecurityUtils.getCurrentUserId()));
+                                criteriaBuilder.equal(root.get("user").get("id"), securityUtils.getCurrentUserId()));
         spec.and(specification);
         Page<Folder> page = repository.findAll(spec, pageable);
         return new PageResponse<FolderResponseDTO>()
@@ -75,7 +78,7 @@ public class FolderServiceImpl extends GenericService<Folder, FolderRequestDTO, 
     @Override
     protected void beforeCreateMapper(FolderRequestDTO folderRequestDTO) {
         // get the current user id from security context
-        Long userId = SecurityUtils.getCurrentUserId();
+        Long userId = securityUtils.getCurrentUserId();
 
         Folder parentFolder = null;
         if (folderRequestDTO.getParentId() != null) {
@@ -102,7 +105,7 @@ public class FolderServiceImpl extends GenericService<Folder, FolderRequestDTO, 
     @Override
     protected void afterCreateMapper(FolderRequestDTO folderRequestDTO, Folder entity) {
         // get the current user id from security context
-        Long userId = SecurityUtils.getCurrentUserId();
+        Long userId = securityUtils.getCurrentUserId();
         if (userId == null) {
             throw new ResourceNotFoundException("User not found");
         }

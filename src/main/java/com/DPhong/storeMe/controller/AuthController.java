@@ -40,6 +40,7 @@ public class AuthController {
   private final TokenProvider tokenProvider;
   private final VerificationService verificationService;
   private final RefreshTokenService refreshTokenService;
+  private final SecurityUtils securityUtils;
   private final MailService mailService;
 
   @Operation(summary = "Đăng ký tài khoản")
@@ -71,7 +72,7 @@ public class AuthController {
         authenticationManagerBuilder.getObject().authenticate(authenticationToken);
     SecurityContextHolder.getContext().setAuthentication(authentication);
 
-    Long userId = SecurityUtils.getCurrentUserId();
+    Long userId = securityUtils.getCurrentUserId();
 
     String accessToken = tokenProvider.generateAccessToken(userId);
 

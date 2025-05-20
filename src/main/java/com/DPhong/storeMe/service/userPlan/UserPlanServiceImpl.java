@@ -28,12 +28,13 @@ public class UserPlanServiceImpl implements UserPlanService {
   private final StoragePlanRepository storagePlanRepository;
   private final UserRepository userRepository;
   private final UserPlanRepository userPlanRepository;
+    private final SecurityUtils securityUtils;
 
   @Override
   public UserPlanResponseDTO subscribe(UserPlanRequestDTO userPlanRequestDTO) {
     User user =
         userRepository
-            .findById(SecurityUtils.getCurrentUserId())
+            .findById(securityUtils.getCurrentUserId())
             .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     StoragePlan storagePlan =
         storagePlanRepository
@@ -65,7 +66,7 @@ public class UserPlanServiceImpl implements UserPlanService {
   @Override
   public PageResponse<UserPlanResponseDTO> getUserPlanHistory(
       Specification<UserPlan> specification, Pageable pageable) {
-    Long userId = SecurityUtils.getCurrentUserId();
+    Long userId = securityUtils.getCurrentUserId();
     Specification<UserPlan> spec =
         (root, _, criteriaBuilder) -> criteriaBuilder.equal(root.get("user").get("id"), userId);
     spec.and(specification);
@@ -87,7 +88,7 @@ public class UserPlanServiceImpl implements UserPlanService {
   }
 
   private UserPlan getCurrentUserPlan() {
-    Long userId = SecurityUtils.getCurrentUserId();
+    Long userId = securityUtils.getCurrentUserId();
     UserPlan current =
         userPlanRepository
             .findByUserIdAndIsActiveTrue(userId)

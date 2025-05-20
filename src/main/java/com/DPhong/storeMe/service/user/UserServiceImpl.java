@@ -35,6 +35,7 @@ public class UserServiceImpl implements UserService {
   private final FolderRepository folderRepository;
   private final RoleRepository roleRepository;
   private final PasswordEncoder passwordEncoder;
+    private final SecurityUtils securityUtils;
 
   /**
    * Register a new user.
@@ -122,7 +123,7 @@ public class UserServiceImpl implements UserService {
   /** Get the current user from the security context. */
   private User getCurrentUser() {
     return userRepository
-        .findById(SecurityUtils.getCurrentUserId())
+        .findById(securityUtils.getCurrentUserId())
         .orElseThrow(() -> new ResourceNotFoundException("User not found"));
   }
 }

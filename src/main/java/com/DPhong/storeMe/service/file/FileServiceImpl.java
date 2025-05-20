@@ -36,6 +36,7 @@ public class FileServiceImpl implements FileService {
   private final FileStorageService fileStorageService;
   private final FileMapper fileMapper;
   private final UserRepository userRepository;
+    private final SecurityUtils securityUtils;
 
   @Override
   public FileResponseDTO getFileInfo(Long id) {
@@ -117,7 +118,7 @@ public class FileServiceImpl implements FileService {
       throw new ResourceNotFoundException("Some files not found");
     }
     for (File file : files) {
-      if (file.getUser().getId() != SecurityUtils.getCurrentUserId()) {
+      if (file.getUser().getId() != securityUtils.getCurrentUserId()) {
         throw new BadRequestException("File does not belong to user");
       }
       fileStorageService.deleteFile(file.getPath());
@@ -138,7 +139,7 @@ public class FileServiceImpl implements FileService {
         fileRepository
             .findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("File not found with id: " + id));
-    if (file.getUser().getId() != SecurityUtils.getCurrentUserId()) {
+    if (file.getUser().getId() != securityUtils.getCurrentUserId()) {
       throw new BadRequestException("File does not belong to user");
     }
     return file;
@@ -151,13 +152,13 @@ public class FileServiceImpl implements FileService {
           folderRepository
               .findById(folderId)
               .orElseThrow(() -> new ResourceNotFoundException("Folder not found "));
-      if (parentFolder.getUser().getId() != SecurityUtils.getCurrentUserId()) {
+      if (parentFolder.getUser().getId() != securityUtils.getCurrentUserId()) {
         throw new BadRequestException("Folder does not belong to user");
       }
     } else {
       parentFolder =
           folderRepository
-              .findByUserIdAndParentFolderIdIsNull(SecurityUtils.getCurrentUserId())
+              .findByUserIdAndParentFolderIdIsNull(securityUtils.getCurrentUserId())
               .orElseThrow(() -> new ResourceNotFoundException("Root folder not found"));
     }
     return parentFolder;
