@@ -2,6 +2,7 @@ package com.DPhong.storeMe.entity;
 
 import com.DPhong.storeMe.enums.LoginProvider;
 import com.DPhong.storeMe.enums.UserStatus;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -49,13 +50,13 @@ public class User extends BaseEntity {
   @OneToMany(mappedBy = "user")
   private List<RefreshToken> refreshTokens = new ArrayList<>();
 
-  @OneToMany(mappedBy = "user")
+  @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<Folder> folders = new ArrayList<>();
 
-  @OneToMany(mappedBy = "user")
+  @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true)
   private List<File> files = new ArrayList<>();
 
-  @OneToMany(mappedBy = "user")
+  @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true)
   private List<UserPlan> userPlans = new ArrayList<>();
 
   @ManyToOne

@@ -13,15 +13,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
-import org.springframework.util.FileSystemUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 @Service
-public class FileStorageServiceImpl implements FileStorageService {
+public class StorageServiceImpl implements StorageService {
 
   private final Path rootPath;
 
-  public FileStorageServiceImpl(@Value("${storage.root.location}") String rootStorageLocation) {
+  public StorageServiceImpl(@Value("${storage.root.location}") String rootStorageLocation) {
     this.rootPath = Paths.get(rootStorageLocation);
   }
 
@@ -35,15 +34,19 @@ public class FileStorageServiceImpl implements FileStorageService {
   @Override
   @PostConstruct
   public void init() {
+    // If the root path does not exist, create it
     if (Files.notExists(rootPath)) {
       try {
         Files.createDirectories(rootPath);
+        return;
       } catch (IOException e) {
         throw new StorageException("Could not initialize storage location", e);
       } catch (SecurityException e) {
         throw new StorageException("Storage location is not accessible", e);
       }
     }
+
+    // If the root path exists, check if it is a directory and writable
     if (!Files.isDirectory(rootPath)) {
       throw new StorageException("Storage location is not a directory");
     }
@@ -67,78 +70,6 @@ public class FileStorageServiceImpl implements FileStorageService {
   }
 
   /**
-   * Rename a folder at the specified path.
-   *
-   * @param path the path of the folder to rename
-   * @param oldName the current name of the folder
-   * @param newName the new name for the folder
-   * @throws StorageException if the folder does not exist or cannot be renamed
-   */
-  @Override
-  public void renameFolder(String path, String oldName, String newName) {
-    Path folderPath = sanitizePath(path);
-    if (Files.notExists(folderPath)) {
-      throw new StorageException("Path does not exist: " + path);
-    }
-    Path oldFolderPath = folderPath.resolve(oldName);
-    if (Files.notExists(oldFolderPath)) {
-      throw new StorageException("Folder does not exist: " + oldName);
-    }
-    Path newFolderPath = folderPath.resolve(newName);
-    if (Files.exists(newFolderPath)) {
-      throw new StorageException("Folder already exists: " + newName);
-    }
-    try {
-      Files.move(oldFolderPath, newFolderPath, StandardCopyOption.REPLACE_EXISTING);
-    } catch (Exception e) {
-      throw new StorageException("Could not rename folder: " + oldName, e);
-    }
-  }
-
-  /**
-   * Create a folder at the specified path with the given folder name.
-   *
-   * @param path the path where the folder should be created relative to the root storage location
-   * @param folderName the name of the folder to create
-   * @throws StorageException if the folder already exists or cannot be created
-   */
-  @Override
-  public String createFolder(String path, String folderName) {
-    Path folderPath = sanitizePath(path);
-    if (Files.notExists(folderPath)) {
-      throw new StorageException("Path does not exist: " + path);
-    }
-    Path newFolderPath = folderPath.resolve(folderName);
-    if (Files.exists(newFolderPath)) {
-      throw new StorageException("Folder already exists: " + folderName);
-    }
-    try {
-      Files.createDirectory(newFolderPath);
-    } catch (Exception e) {
-      throw new StorageException("Could not create folder: " + folderName, e);
-    }
-    return rootPath.relativize(newFolderPath).toString();
-  }
-
-  /**
-   * Delete a folder at the specified path.
-   *
-   * @param path the path of the folder to delete
-   * @throws StorageException if the folder does not exist or cannot be deleted
-   */
-  @Override
-  public void deleteFolder(String path) {
-    Path folderPath = sanitizePath(path);
-    if (Files.notExists(folderPath)) {
-      throw new StorageException("Path does not exist: " + path);
-    }
-    boolean deleted = FileSystemUtils.deleteRecursively(folderPath.toFile());
-    if (!deleted) {
-      throw new StorageException("Could not delete folder: " + path);
-    }
-  }
-
-  /**
    * Store a file at the specified path.
    *
    * @param path the path where the file should be stored
@@ -151,6 +82,7 @@ public class FileStorageServiceImpl implements FileStorageService {
       throw new StorageException("Failed to store empty file.");
     }
     try {
+      // Sanitize the path to ensure it is within the root storage location
       Path folderPath = sanitizePath(path);
       if (Files.notExists(folderPath)) {
         throw new StorageException("Path does not exist: " + path);

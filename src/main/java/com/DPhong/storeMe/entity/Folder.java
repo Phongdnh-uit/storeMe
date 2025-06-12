@@ -1,7 +1,10 @@
 package com.DPhong.storeMe.entity;
 
+import com.DPhong.storeMe.enums.FolderType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
@@ -15,20 +18,7 @@ import lombok.Setter;
 @Setter
 @Entity
 @Table(name = "folders")
-public class Folder extends BaseEntity {
-
-  @Column(nullable = false)
-  private String name;
-
-  /** The real path of the folder in the file system */
-  @Column(nullable = false)
-  private String path;
-
-  private Long size = 0L;
-
-  @ManyToOne
-  @JoinColumn(name = "user_id", nullable = false)
-  private User user;
+public class Folder extends FileSystemNode {
 
   @ManyToOne
   @JoinColumn(name = "parent_folder_id")
@@ -39,4 +29,18 @@ public class Folder extends BaseEntity {
 
   @OneToMany(mappedBy = "folder")
   private List<File> files = new ArrayList<>();
+
+  @Column(columnDefinition = "boolean default false")
+  private boolean isLocked = false;
+
+  @Column(columnDefinition = "boolean default false")
+  private boolean isHidden = false;
+
+  @Enumerated(EnumType.STRING)
+  private FolderType type = FolderType.NORMAL;
+
+  @Override
+  public boolean isDirectory() {
+    return true;
+  }
 }

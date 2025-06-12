@@ -1,9 +1,7 @@
 package com.DPhong.storeMe.entity;
 
 import jakarta.persistence.*;
-
 import java.time.Instant;
-
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
@@ -18,25 +16,25 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @EntityListeners(AuditingEntityListener.class)
 @Accessors(chain = true)
 @MappedSuperclass
-public class BaseEntity {
+public abstract class BaseEntity {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Long id;
 
-    @Column(nullable = false, updatable = false)
-    @CreatedDate
-    private Instant createdAt;
+  @Column(nullable = false, updatable = false)
+  @CreatedDate
+  private Instant createdAt;
 
-    @Column(nullable = false)
-    @LastModifiedDate
-    private Instant updatedAt;
+  @Column(nullable = false)
+  @LastModifiedDate
+  private Instant updatedAt;
 
-    @Column(nullable = false, updatable = false)
-    @CreatedBy
-    private Long createdBy;
+  @Column(nullable = false, updatable = false)
+  @CreatedBy
+  private Long createdBy;
 
-    @Column(nullable = false)
-    @LastModifiedBy
-    private Long updatedBy;
+  @Column(nullable = false)
+  @LastModifiedBy
+  private Long updatedBy;
 }

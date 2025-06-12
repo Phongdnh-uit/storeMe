@@ -13,12 +13,7 @@ import lombok.Setter;
 @Setter
 @Entity
 @Table(name = "files")
-public class File extends BaseEntity {
-
-  @Column(nullable = false)
-  private String name;
-
-  private Long size;
+public class File extends FileSystemNode {
 
   @Column(nullable = false)
   private String mimeType;
@@ -28,15 +23,16 @@ public class File extends BaseEntity {
 
   /** The real path of the file in the file system */
   @Column(nullable = false)
-  private String path;
-
-  @ManyToOne
-  @JoinColumn(name = "user_id", nullable = false)
-  private User user;
+  private String blobKey;
 
   private Instant lastAccessed;
 
   @ManyToOne
   @JoinColumn(name = "folder_id")
   private Folder folder;
+
+  @Override
+  public boolean isDirectory() {
+    return false;
+  }
 }

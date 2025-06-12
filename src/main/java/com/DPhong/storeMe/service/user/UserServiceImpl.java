@@ -1,6 +1,6 @@
 package com.DPhong.storeMe.service.user;
 
-import com.DPhong.storeMe.constant.ResourceLocation;
+import com.DPhong.storeMe.constant.FolderConstant;
 import com.DPhong.storeMe.constant.RoleConstant;
 import com.DPhong.storeMe.dto.authentication.ChangePasswordRequestDTO;
 import com.DPhong.storeMe.dto.authentication.RegisterRequestDTO;
@@ -8,6 +8,7 @@ import com.DPhong.storeMe.dto.user.UserResponseDTO;
 import com.DPhong.storeMe.entity.Folder;
 import com.DPhong.storeMe.entity.Role;
 import com.DPhong.storeMe.entity.User;
+import com.DPhong.storeMe.enums.FolderType;
 import com.DPhong.storeMe.enums.LoginProvider;
 import com.DPhong.storeMe.enums.UserStatus;
 import com.DPhong.storeMe.exception.BadRequestException;
@@ -18,7 +19,7 @@ import com.DPhong.storeMe.repository.FolderRepository;
 import com.DPhong.storeMe.repository.RoleRepository;
 import com.DPhong.storeMe.repository.UserRepository;
 import com.DPhong.storeMe.security.SecurityUtils;
-import com.DPhong.storeMe.service.general.FileStorageService;
+import jakarta.transaction.Transactional;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -31,11 +32,10 @@ public class UserServiceImpl implements UserService {
 
   private final UserRepository userRepository;
   private final UserMapper userMapper;
-  private final FileStorageService fileStorageService;
   private final FolderRepository folderRepository;
   private final RoleRepository roleRepository;
   private final PasswordEncoder passwordEncoder;
-    private final SecurityUtils securityUtils;
+  private final SecurityUtils securityUtils;
 
   /**
    * Register a new user.
@@ -52,6 +52,7 @@ public class UserServiceImpl implements UserService {
         .setPasswordHash(passwordEncoder.encode(registerRequestDTO.getPassword()))
         .setStatus(UserStatus.UNVERIFIED);
     user.setLoginProvider(LoginProvider.LOCAL);
+
     // Set the role for the user
     Role userRole =
         roleRepository
@@ -59,18 +60,9 @@ public class UserServiceImpl implements UserService {
             .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
     user.setRole(userRole);
     user = userRepository.save(user);
-    // Create a folder for the user, using the user ID as the folder name
-    // The folder will be created in the USER_STORAGE_ROOT directory
-    // this is the root directory for user and not save in the database
-    Folder folder = new Folder();
-    folder.setName(user.getId().toString());
-    folder.setSize(0L);
-    folder.setUser(user);
-    String path =
-        fileStorageService.createFolder(
-            ResourceLocation.USER_STORAGE_ROOT, user.getId().toString());
-    folder.setPath(path);
-    folderRepository.save(folder);
+
+    // Create a folder for the user: USERROOT, TRASH, SHARED
+    createFolderForUser(user);
     return userMapper.entityToResponse(user);
   }
 
@@ -125,5 +117,29 @@ public class UserServiceImpl implements UserService {
     return userRepository
         .findById(securityUtils.getCurrentUserId())
         .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+  }
+
+  @Transactional
+  private void createFolderForUser(User user) {
+    // Create the root folder for the user
+    Folder userRootFolder = new Folder();
+    userRootFolder.setUser(user);
+    userRootFolder.setName(FolderConstant.USER_ROOT);
+    userRootFolder.setType(FolderType.USERROOT);
+    folderRepository.save(userRootFolder);
+
+    // Create the trash folder for the user
+    Folder trashFolder = new Folder();
+    trashFolder.setUser(user);
+    trashFolder.setName(FolderConstant.TRASH);
+    trashFolder.setType(FolderType.TRASH);
+    folderRepository.save(trashFolder);
+
+    // Create the shared folder for the user
+    Folder sharedFolder = new Folder();
+    sharedFolder.setUser(user);
+    sharedFolder.setName(FolderConstant.SHARED);
+    sharedFolder.setType(FolderType.SHARED);
+    folderRepository.save(sharedFolder);
   }
 }
