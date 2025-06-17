@@ -77,7 +77,7 @@ public class StorageServiceImpl implements StorageService {
    * @throws StorageException if the file is empty or cannot be stored
    */
   @Override
-  public String storeFile(String path, MultipartFile file) {
+  public String storeFile(String path, String name, MultipartFile file) {
     if (file == null || file.isEmpty()) {
       throw new StorageException("Failed to store empty file.");
     }
@@ -87,9 +87,9 @@ public class StorageServiceImpl implements StorageService {
       if (Files.notExists(folderPath)) {
         throw new StorageException("Path does not exist: " + path);
       }
-      Path targetLocation = folderPath.resolve(file.getOriginalFilename());
+      Path targetLocation = folderPath.resolve(name != null ? name : file.getOriginalFilename());
       if (Files.exists(targetLocation)) {
-        throw new StorageException("File already exists: " + file.getOriginalFilename());
+        throw new StorageException("File already exists");
       }
       try (InputStream inputStream = file.getInputStream()) {
         Files.copy(inputStream, targetLocation, StandardCopyOption.REPLACE_EXISTING);

@@ -1,6 +1,6 @@
 package com.DPhong.storeMe.enums;
 
-public enum FolderAction {
+public enum FSAction {
   RENAME,
   MOVE,
   COPY

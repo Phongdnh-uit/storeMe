@@ -1,15 +1,14 @@
 package com.DPhong.storeMe.service.folder;
 
 import com.DPhong.storeMe.dto.PageResponse;
+import com.DPhong.storeMe.dto.fileSystemNode.UpdateFSNodeRequestDTO;
 import com.DPhong.storeMe.dto.folder.FolderRequestDTO;
 import com.DPhong.storeMe.dto.folder.FolderResponseDTO;
 import com.DPhong.storeMe.entity.File;
 import com.DPhong.storeMe.entity.Folder;
-import com.DPhong.storeMe.enums.FolderAction;
 import com.DPhong.storeMe.enums.FolderType;
 import com.DPhong.storeMe.exception.BadRequestException;
 import com.DPhong.storeMe.exception.DataConflictException;
-import com.DPhong.storeMe.exception.ResourceNotFoundException;
 import com.DPhong.storeMe.mapper.FolderMapper;
 import com.DPhong.storeMe.repository.FileRepository;
 import com.DPhong.storeMe.repository.FolderRepository;
@@ -47,14 +46,10 @@ public class FolderServiceImpl extends GenericService<Folder, FolderRequestDTO, 
   @Override
   public PageResponse<FolderResponseDTO> findAll(
       Specification<Folder> specification, Pageable pageable) {
-    Folder rootFolder =
-        ((FolderRepository) repository)
-            .findByUserIdAndParentFolderIdIsNull(securityUtils.getCurrentUserId())
-            .orElseThrow(() -> new ResourceNotFoundException("Root folder have not been created"));
     Specification<Folder> spec =
         (root, _, criteriaBuilder) ->
             criteriaBuilder.and(
-                criteriaBuilder.equal(root.get("parentFolder").get("id"), rootFolder.getId()),
+                criteriaBuilder.equal(root.get("isLocked"), false),
                 criteriaBuilder.equal(
                     root.get("user").get("id"), securityUtils.getCurrentUserId()));
     spec.and(specification);
@@ -103,7 +98,7 @@ public class FolderServiceImpl extends GenericService<Folder, FolderRequestDTO, 
 
   // ============================ UPDATE: RENAME, MOVE, COPY ============================
   @Override
-  public FolderResponseDTO update(Long id, FolderRequestDTO request, FolderAction action) {
+  public FolderResponseDTO update(Long id, UpdateFSNodeRequestDTO request) {
 
     // 1. ---- validate ----
     Long currentUserId = securityUtils.getCurrentUserId();
@@ -129,7 +124,7 @@ public class FolderServiceImpl extends GenericService<Folder, FolderRequestDTO, 
     // 2. ---- update properties ----
 
     // PROBLEM: ancestor must be updated when moving or renaming a folder
-    switch (action) {
+    switch (request.getAction()) {
       case RENAME:
         folder.setName(request.getName());
         // Update ancestor of subfolders and files
@@ -146,13 +141,10 @@ public class FolderServiceImpl extends GenericService<Folder, FolderRequestDTO, 
         folder = repository.save(folder);
         return mapper.entityToResponse(folder);
       case COPY:
-        // Create a copy of the folder
-        break;
-
+      // Create a copy of the folder
       default:
-        throw new BadRequestException("Invalid folder action: " + action);
+        throw new BadRequestException("Invalid folder action");
     }
-    return null;
   }
 
   // ============================ DELETE FOLDER ============================
