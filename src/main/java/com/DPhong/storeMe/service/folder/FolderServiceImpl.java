@@ -3,17 +3,22 @@ package com.DPhong.storeMe.service.folder;
 import com.DPhong.storeMe.dto.PageResponse;
 import com.DPhong.storeMe.dto.folder.FolderRequestDTO;
 import com.DPhong.storeMe.dto.folder.FolderResponseDTO;
+import com.DPhong.storeMe.entity.File;
 import com.DPhong.storeMe.entity.Folder;
-import com.DPhong.storeMe.entity.User;
+import com.DPhong.storeMe.enums.FolderAction;
+import com.DPhong.storeMe.enums.FolderType;
+import com.DPhong.storeMe.exception.BadRequestException;
+import com.DPhong.storeMe.exception.DataConflictException;
 import com.DPhong.storeMe.exception.ResourceNotFoundException;
 import com.DPhong.storeMe.mapper.FolderMapper;
+import com.DPhong.storeMe.repository.FileRepository;
 import com.DPhong.storeMe.repository.FolderRepository;
 import com.DPhong.storeMe.repository.UserRepository;
 import com.DPhong.storeMe.security.SecurityUtils;
 import com.DPhong.storeMe.service.GenericService;
-import com.DPhong.storeMe.validator.folder.FolderValidator;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.StreamSupport;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -25,18 +30,18 @@ public class FolderServiceImpl extends GenericService<Folder, FolderRequestDTO, 
 
   private final UserRepository userRepository;
   private final SecurityUtils securityUtils;
-  private final FolderValidator folderValidator;
+  private final FileRepository fileRepository;
 
   public FolderServiceImpl(
       FolderRepository repository,
       FolderMapper mapper,
       UserRepository userRepository,
       SecurityUtils securityUtils,
-      FolderValidator folderValidator) {
+      FileRepository fileRepository) {
     super(repository, mapper, Folder.class);
     this.userRepository = userRepository;
     this.securityUtils = securityUtils;
-    this.folderValidator = folderValidator;
+    this.fileRepository = fileRepository;
   }
 
   @Override
@@ -62,98 +67,199 @@ public class FolderServiceImpl extends GenericService<Folder, FolderRequestDTO, 
         .setTotalPages(page.getTotalPages());
   }
 
+  // ============================ CREATE ============================
   @Override
-  protected void beforeCreateMapper(FolderRequestDTO folderRequestDTO) {
-    // Validate the folder request before creating
-    folderValidator.validateCreate(folderRequestDTO);
-  }
+  public FolderResponseDTO create(FolderRequestDTO request) {
 
-  @Override
-  protected void afterCreateMapper(FolderRequestDTO folderRequestDTO, Folder entity) {
-    // get the current user id from security context
-    Long userId = securityUtils.getCurrentUserId();
-    if (userId == null) {
-      throw new ResourceNotFoundException("User not found");
+    // 1. ---- validate ----
+    Long currentUserId = securityUtils.getCurrentUserId();
+
+    Folder parentFolder = getParentFolder(request.getParentId(), currentUserId);
+
+    /** Check if the folder name already exists in the parent folder */
+    if (parentFolder.getSubFolders().stream()
+        .anyMatch(f -> f.getName().equals(request.getName()))) {
+      throw new DataConflictException(
+          "Folder name already exists in the parent folder: " + request.getName());
     }
-    User user =
-        userRepository
-            .findById(userId)
-            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-    String path = "";
+    // 2. ---- mapper ----
+    Folder entity = mapper.requestToEntity(request);
 
-    Folder parentFolder = null;
-
-    // check if the parent folder is null or not
-    if (folderRequestDTO.getParentId() != null) {
-      parentFolder =
-          ((FolderRepository) repository)
-              .findById(folderRequestDTO.getParentId())
-              .orElseThrow(() -> new ResourceNotFoundException("Parent folder not found"));
-      if (parentFolder.getUser().getId() != userId) {
-        throw new ResourceNotFoundException("Parent folder not belong to this user");
-      }
-    } else {
-      parentFolder =
-          ((FolderRepository) repository)
-              .findByUserIdAndParentFolderIdIsNull(userId)
-              .orElseThrow(
-                  () -> new ResourceNotFoundException("Root folder have not been created"));
-    }
-    path = fileStorageService.createFolder(parentFolder.getPath(), folderRequestDTO.getName());
+    // 3. ---- set properties ----
     entity.setParentFolder(parentFolder);
-    entity.setUser(user);
-    entity.setPath(path);
+    entity.setUser(
+        userRepository
+            .findById(currentUserId)
+            .orElseThrow(() -> new IllegalStateException("User id must not be null")));
+
+    // clone the parent folder's ancestor list
+    List<Long> ancestor = new ArrayList<>(parentFolder.getAncestor());
+    ancestor.add(parentFolder.getId());
+    entity.setAncestor(ancestor);
+
+    return mapper.entityToResponse(entity);
   }
 
+  // ============================ UPDATE: RENAME, MOVE, COPY ============================
   @Override
-  protected void beforeUpdateMapper(Long id, FolderRequestDTO request, Folder old) {
-    fileStorageService.renameFolder(old.getPath(), old.getName(), request.getName());
+  public FolderResponseDTO update(Long id, FolderRequestDTO request, FolderAction action) {
+
+    // 1. ---- validate ----
+    Long currentUserId = securityUtils.getCurrentUserId();
+
+    Folder folder = findByIdOrThrow(id);
+    if (folder.getUser().getId() != currentUserId) {
+      throw new BadRequestException("Folder does not belong to this user");
+    }
+
+    if (folder.isLocked()) {
+      throw new BadRequestException("Folder is locked and cannot be modified");
+    }
+
+    Folder parentFolder = getParentFolder(request.getParentId(), currentUserId);
+
+    /* Check if the folder exists and belongs to the current user */
+    if (parentFolder.getSubFolders().stream()
+        .anyMatch(f -> f.getName().equals(request.getName()) && !f.getId().equals(id))) {
+      throw new DataConflictException(
+          "Folder name already exists in the parent folder: " + request.getName());
+    }
+
+    // 2. ---- update properties ----
+
+    // PROBLEM: ancestor must be updated when moving or renaming a folder
+    switch (action) {
+      case RENAME:
+        folder.setName(request.getName());
+        // Update ancestor of subfolders and files
+        updateAncestorList(folder.getId(), folder.getAncestor());
+        folder = repository.save(folder);
+        return mapper.entityToResponse(folder);
+      case MOVE:
+        // case test: /test/uit -> /test/uit/example
+        if (parentFolder.getAncestor().contains(folder.getId())) {
+          throw new BadRequestException("Cannot move a folder into its own subfolder");
+        }
+        folder.setParentFolder(parentFolder);
+        // Update the path of the folder
+        folder = repository.save(folder);
+        return mapper.entityToResponse(folder);
+      case COPY:
+        // Create a copy of the folder
+        break;
+
+      default:
+        throw new BadRequestException("Invalid folder action: " + action);
+    }
+    return null;
   }
 
+  // ============================ DELETE FOLDER ============================
   @Override
   public void delete(Long id) {
+    // 1. ---- validate ----
+    Long currentUserId = securityUtils.getCurrentUserId();
+
+    Folder trashFolder =
+        ((FolderRepository) repository)
+            .findByUserIdAndType(currentUserId, FolderType.TRASH)
+            .orElseThrow(() -> new IllegalStateException("Trash folder have not been created"));
+
     Folder folder = findByIdOrThrow(id);
-    if (folder.getParentFolder() == null) {
-      throw new ResourceNotFoundException("Root folder can not be deleted");
+
+    if (folder.getUser().getId() != currentUserId) {
+      throw new BadRequestException("Folder not belong to this user");
     }
-    deleteSubFolder(folder);
-    fileStorageService.deleteFolder(folder.getPath());
-    repository.delete(folder);
+
+    // check if folder is locked
+    if (folder.isLocked()) {
+      throw new BadRequestException("Folder is locked and cannot be deleted");
+    }
+
+    // 2. ---- add to trash ----
+    folder.setParentFolder(trashFolder);
+    folder.setDeletedAt(Instant.now());
+    repository.save(folder);
   }
 
+  // ============================ DELETE ALL FOLDER ============================
   @Override
   public void deleteAllById(Iterable<Long> ids) {
-    List<Folder> folders = repository.findAllById(ids);
-    if (folders.size() != StreamSupport.stream(ids.spliterator(), false).count()) {
-      throw new ResourceNotFoundException("Some " + Folder.class.getSimpleName() + " not found");
-    }
+    // 1. ---- validate ----
+    Long currentUserId = securityUtils.getCurrentUserId();
+    Folder trashFolder =
+        ((FolderRepository) repository)
+            .findByUserIdAndType(currentUserId, FolderType.TRASH)
+            .orElseThrow(() -> new IllegalStateException("Trash folder have not been created"));
+
+    // 2. ---- add to trash ----
+    List<Folder> deletableFolders =
+        repository.findAllById(ids).stream()
+            .filter(folder -> !folder.isLocked() && folder.getUser().getId().equals(currentUserId))
+            .map(
+                folder -> {
+                  folder.setDeletedAt(Instant.now());
+                  folder.setParentFolder(trashFolder);
+                  return folder;
+                })
+            .toList();
+    repository.saveAll(deletableFolders);
+  }
+
+  // ============================ CLEAN TRASH ============================
+  @Override
+  public void cleanTrash() {
+    Folder trashFolder =
+        ((FolderRepository) repository)
+            .findByUserIdAndType(securityUtils.getCurrentUserId(), FolderType.TRASH)
+            .orElseThrow(() -> new IllegalStateException("Trash folder have not been created"));
+    repository.deleteAll(trashFolder.getSubFolders());
+  }
+
+  // ============================ CRON JOB CLEAN TRASH ============================
+  @Override
+  public void cronJobCleanTrash() {
+    Folder trashFolder =
+        ((FolderRepository) repository)
+            .findByUserIdAndType(securityUtils.getCurrentUserId(), FolderType.TRASH)
+            .orElseThrow(() -> new IllegalStateException("Trash folder have not been created"));
+    List<Folder> deletableFolders =
+        trashFolder.getSubFolders().stream()
+            .filter(f -> f.getDeletedAt().isBefore(Instant.now()))
+            .toList();
+    repository.deleteAll(deletableFolders);
+  }
+
+  // ============================ HELPER ============================
+  private Folder getParentFolder(Long parentFolderId, Long currentUserId) {
+    return parentFolderId == null || parentFolderId == 0
+        ? ((FolderRepository) repository)
+            .findByUserIdAndType(currentUserId, FolderType.USERROOT)
+            .orElseThrow(() -> new IllegalArgumentException("User root folder not found"))
+        : repository
+            .findById(parentFolderId)
+            .filter(folder -> folder.getUser().getId().equals(currentUserId))
+            .orElseThrow(() -> new BadRequestException("Parent folder not found"));
+  }
+
+  private void updateAncestorList(Long ancestorId, List<Long> replaceIds) {
+    List<Folder> folders = ((FolderRepository) repository).findByAncestorContain(ancestorId);
+    List<File> files = fileRepository.findByAncestorContain(ancestorId);
+
     for (Folder folder : folders) {
-      if (folder.getParentFolder() == null) {
-        throw new ResourceNotFoundException("Root folder can not be deleted");
-      }
-      deleteSubFolder(folder);
-      fileStorageService.deleteFolder(folder.getPath());
+      List<Long> ancestor = folder.getAncestor();
+      int replaceIndex = ancestor.indexOf(ancestorId);
+      ancestor.subList(0, replaceIndex).clear();
+      ancestor.addAll(0, replaceIds);
     }
-    repository.deleteAll(folders);
-  }
-
-  private void deleteSubFolder(Folder folder) {
-    for (Folder subFolder : folder.getSubFolders()) {
-      deleteSubFolder(subFolder);
+    for (File file : files) {
+      List<Long> ancestor = file.getAncestor();
+      int replaceIndex = ancestor.indexOf(ancestorId);
+      ancestor.subList(0, replaceIndex).clear();
+      ancestor.addAll(0, replaceIds);
     }
-    repository.delete(folder);
-  }
-
-  @Override
-  public void moveFolder(FolderRequestDTO folderRequestDTO) {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("Unimplemented method 'moveFolder'");
-  }
-
-  @Override
-  public void copyFolder(FolderRequestDTO folderRequestDTO) {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("Unimplemented method 'copyFolder'");
+    fileRepository.saveAll(files);
+    repository.saveAll(folders);
   }
 }

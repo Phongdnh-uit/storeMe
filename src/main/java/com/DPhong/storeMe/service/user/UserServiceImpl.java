@@ -126,6 +126,7 @@ public class UserServiceImpl implements UserService {
     userRootFolder.setUser(user);
     userRootFolder.setName(FolderConstant.USER_ROOT);
     userRootFolder.setType(FolderType.USERROOT);
+    userRootFolder.setLocked(true);
     folderRepository.save(userRootFolder);
 
     // Create the trash folder for the user
@@ -133,6 +134,7 @@ public class UserServiceImpl implements UserService {
     trashFolder.setUser(user);
     trashFolder.setName(FolderConstant.TRASH);
     trashFolder.setType(FolderType.TRASH);
+    trashFolder.setLocked(true);
     folderRepository.save(trashFolder);
 
     // Create the shared folder for the user
@@ -140,6 +142,7 @@ public class UserServiceImpl implements UserService {
     sharedFolder.setUser(user);
     sharedFolder.setName(FolderConstant.SHARED);
     sharedFolder.setType(FolderType.SHARED);
+    sharedFolder.setLocked(true);
     folderRepository.save(sharedFolder);
   }
 }
