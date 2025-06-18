@@ -1,7 +1,6 @@
 package com.DPhong.storeMe.service.user;
 
 import com.DPhong.storeMe.constant.FolderConstant;
-import com.DPhong.storeMe.constant.RoleConstant;
 import com.DPhong.storeMe.dto.authentication.ChangePasswordRequestDTO;
 import com.DPhong.storeMe.dto.authentication.RegisterRequestDTO;
 import com.DPhong.storeMe.dto.user.UserResponseDTO;
@@ -10,6 +9,7 @@ import com.DPhong.storeMe.entity.Role;
 import com.DPhong.storeMe.entity.User;
 import com.DPhong.storeMe.enums.FolderType;
 import com.DPhong.storeMe.enums.LoginProvider;
+import com.DPhong.storeMe.enums.RoleName;
 import com.DPhong.storeMe.enums.UserStatus;
 import com.DPhong.storeMe.exception.BadRequestException;
 import com.DPhong.storeMe.exception.DataConflictException;
@@ -56,7 +56,7 @@ public class UserServiceImpl implements UserService {
     // Set the role for the user
     Role userRole =
         roleRepository
-            .findByName(RoleConstant.ROLE_USER)
+            .findByName(RoleName.USER.getName())
             .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
     user.setRole(userRole);
     user = userRepository.save(user);

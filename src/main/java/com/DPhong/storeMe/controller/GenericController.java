@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 
 /**
  * GenericController is a base controller class that provides CRUD operations for entities. The
@@ -42,8 +43,14 @@ public abstract class GenericController<E, I, O> {
   @GetMapping
   public ResponseEntity<ApiResponse<PageResponse<O>>> getAll(
       @ParameterObject Pageable pageable,
-    @Parameter(name = "filter", description = "Bộ lọc thông qua cú pháp truy vấn turkraft/springfilter", example = "name=eq:abc")
-      @Filter Specification<E> specification) {
+      @Parameter(
+              name = "filter",
+              description = "Bộ lọc thông qua cú pháp truy vấn turkraft/springfilter",
+              example = "name:abc",
+              required = false)
+          @RequestParam(name = "filter", required = false)
+          @Filter
+          Specification<E> specification) {
     return ResponseEntity.ok(ApiResponse.success(service.findAll(specification, pageable)));
   }
 

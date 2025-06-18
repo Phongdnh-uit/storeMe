@@ -22,6 +22,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class FolderServiceImpl extends GenericService<Folder, FolderRequestDTO, FolderResponseDTO>
@@ -49,6 +50,7 @@ public class FolderServiceImpl extends GenericService<Folder, FolderRequestDTO, 
     Specification<Folder> spec =
         (root, _, criteriaBuilder) ->
             criteriaBuilder.and(
+                criteriaBuilder.equal(root.get("type"), FolderType.NORMAL),
                 criteriaBuilder.equal(root.get("isLocked"), false),
                 criteriaBuilder.equal(
                     root.get("user").get("id"), securityUtils.getCurrentUserId()));
@@ -93,6 +95,8 @@ public class FolderServiceImpl extends GenericService<Folder, FolderRequestDTO, 
     ancestor.add(parentFolder.getId());
     entity.setAncestor(ancestor);
 
+    entity = repository.save(entity);
+
     return mapper.entityToResponse(entity);
   }
 
@@ -123,12 +127,10 @@ public class FolderServiceImpl extends GenericService<Folder, FolderRequestDTO, 
 
     // 2. ---- update properties ----
 
-    // PROBLEM: ancestor must be updated when moving or renaming a folder
+    // PROBLEM: ancestor must be updated when moving a folder
     switch (request.getAction()) {
       case RENAME:
         folder.setName(request.getName());
-        // Update ancestor of subfolders and files
-        updateAncestorList(folder.getId(), folder.getAncestor());
         folder = repository.save(folder);
         return mapper.entityToResponse(folder);
       case MOVE:
@@ -137,7 +139,8 @@ public class FolderServiceImpl extends GenericService<Folder, FolderRequestDTO, 
           throw new BadRequestException("Cannot move a folder into its own subfolder");
         }
         folder.setParentFolder(parentFolder);
-        // Update the path of the folder
+        // Update the ancestor of the folder
+        updateAncestorList(folder.getId(), parentFolder.getAncestor());
         folder = repository.save(folder);
         return mapper.entityToResponse(folder);
       case COPY:
@@ -235,6 +238,7 @@ public class FolderServiceImpl extends GenericService<Folder, FolderRequestDTO, 
             .orElseThrow(() -> new BadRequestException("Parent folder not found"));
   }
 
+  @Transactional
   private void updateAncestorList(Long ancestorId, List<Long> replaceIds) {
     List<Folder> folders = ((FolderRepository) repository).findByAncestorContain(ancestorId);
     List<File> files = fileRepository.findByAncestorContain(ancestorId);
