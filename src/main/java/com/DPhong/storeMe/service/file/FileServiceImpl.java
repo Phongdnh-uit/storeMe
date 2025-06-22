@@ -106,16 +106,62 @@ public class FileServiceImpl implements FileService {
   public FileResponseDTO update(Long id, UpdateFSNodeRequestDTO request) {
     // 1. ---- validate ----
     File file = getOrThrowFile(id);
-    if (file.getFolder().getFiles().stream()
-        .anyMatch(f -> f.getName().equals(request.getName()) && !f.getId().equals(id))) {
-      throw new BadRequestException("File with the same name already exists in the folder");
-    }
 
     // 2. ---- update the file ----
     switch (request.getAction()) {
-      case RENAME: // TODO
-      case MOVE: // TODO
-      case COPY: // TODO
+      case RENAME:
+        if (file.getFolder().getFiles().stream()
+            .anyMatch(f -> f.getName().equals(request.getName()) && !f.getId().equals(id))) {
+          throw new BadRequestException("File with the same name already exists in the folder");
+        }
+        file.setName(request.getName());
+        file.setLastAccessed(Instant.now());
+        fileRepository.save(file);
+        return fileMapper.entityToResponse(file);
+      case MOVE:
+        Folder newFolder = findParentFolder(request.getParentId());
+        if (newFolder.getFiles().stream()
+            .anyMatch(f -> f.getName().equals(file.getName()) && !f.getId().equals(id))) {
+          throw new BadRequestException("File with the same name already exists in the folder");
+        }
+        file.setFolder(newFolder);
+        file.getAncestor().removeLast();
+        file.getAncestor().add(newFolder.getId());
+        file.setLastAccessed(Instant.now());
+        fileRepository.save(file);
+        return fileMapper.entityToResponse(file);
+      case COPY:
+        newFolder = findParentFolder(request.getParentId());
+        if (file.getFolder().getId().equals(newFolder.getId())) {
+          throw new BadRequestException("Cannot copy file to the same folder");
+        }
+        if (newFolder.getFiles().stream()
+            .anyMatch(f -> f.getName().equals(file.getName()) && !f.getId().equals(id))) {
+          throw new BadRequestException("File with the same name already exists in the folder");
+        }
+        File copiedFile = new File();
+        copiedFile.setName(file.getName());
+        copiedFile.setSize(file.getSize());
+        copiedFile.setFolder(newFolder);
+        copiedFile.setUser(file.getUser());
+        copiedFile.setMimeType(file.getMimeType());
+        copiedFile.setExtension(file.getExtension());
+        copiedFile.setLastAccessed(Instant.now());
+        String blobKey = UUID.randomUUID().toString();
+        String storePath =
+            blobKey.substring(0, 2) + "/" + blobKey.substring(3, 5) + "/" + blobKey.substring(6, 8);
+        storageService.copyFile(file.getBlobKey(), storePath);
+        copiedFile.setBlobKey(blobKey);
+        List<Long> ancestor = new ArrayList<>(newFolder.getAncestor());
+        ancestor.removeLast();
+        ancestor.add(newFolder.getId());
+        copiedFile.setAncestor(ancestor);
+        copiedFile = fileRepository.save(copiedFile);
+        // 1. ---- Update User ----
+        User user = copiedFile.getUser();
+        user.setTotalUsage(user.getTotalUsage() + copiedFile.getSize());
+        userRepository.save(user);
+        return fileMapper.entityToResponse(copiedFile);
       default:
         throw new BadRequestException("Invalid action for file update");
     }
