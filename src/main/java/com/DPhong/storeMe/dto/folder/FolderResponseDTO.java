@@ -1,26 +1,22 @@
 package com.DPhong.storeMe.dto.folder;
 
 import com.DPhong.storeMe.dto.file.FileResponseDTO;
-import com.DPhong.storeMe.dto.user.UserResponseDTO;
-import com.DPhong.storeMe.entity.BaseEntity;
+import com.DPhong.storeMe.dto.fileSystemNode.FSResponseDTO;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-public class FolderResponseDTO extends BaseEntity {
-  private String name;
-
-  private String path;
-
-  private Long size = 0L;
-
-  private UserResponseDTO user;
+public class FolderResponseDTO extends FSResponseDTO {
 
   private Long parentFolderId;
 
   private List<FolderResponseDTO> subFolders;
 
   private List<FileResponseDTO> files;
+
+  private boolean isLocked;
+
+  private boolean isHidden;
 }

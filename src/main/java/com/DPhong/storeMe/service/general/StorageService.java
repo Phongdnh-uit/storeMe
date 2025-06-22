@@ -10,7 +10,9 @@ public interface StorageService {
 
   boolean exists(String path);
 
-  String storeFile(String path, String name, MultipartFile file);
+  String storeFile(String path, MultipartFile file);
+
+  String copyFile(String sourcePath, String targetPath);
 
   Resource loadFileAsResource(String path);
 

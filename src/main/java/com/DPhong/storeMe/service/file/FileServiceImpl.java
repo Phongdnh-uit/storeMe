@@ -90,7 +90,7 @@ public class FileServiceImpl implements FileService {
       String blobKey = UUID.randomUUID().toString();
       String storePath =
           blobKey.substring(0, 2) + "/" + blobKey.substring(3, 5) + "/" + blobKey.substring(6, 8);
-      storageService.storeFile(storePath, blobKey.substring(9), fileRequest);
+      storageService.storeFile(storePath, fileRequest);
       file.setBlobKey(blobKey);
       file.setLastAccessed(Instant.now());
       file = fileRepository.save(file);

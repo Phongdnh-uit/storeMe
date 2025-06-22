@@ -24,6 +24,7 @@ public class StorageServiceImpl implements StorageService {
     this.rootPath = Paths.get(rootStorageLocation);
   }
 
+  // ============================ STORAGE INIT ============================
   /**
    * Initialize the storage location by creating the directory if it does not exist.
    *
@@ -56,6 +57,7 @@ public class StorageServiceImpl implements StorageService {
     }
   }
 
+  // ============================ CHECK EXISTS PATH ============================
   /**
    * Check if a file or folder exists at the specified path. the path is relative to the root
    * storage location.
@@ -69,6 +71,7 @@ public class StorageServiceImpl implements StorageService {
     return Files.exists(filePath);
   }
 
+  // ============================ STORE FILE ============================
   /**
    * Store a file at the specified path.
    *
@@ -77,29 +80,53 @@ public class StorageServiceImpl implements StorageService {
    * @throws StorageException if the file is empty or cannot be stored
    */
   @Override
-  public String storeFile(String path, String name, MultipartFile file) {
+  public String storeFile(String path, MultipartFile file) {
     if (file == null || file.isEmpty()) {
       throw new StorageException("Failed to store empty file.");
     }
     try {
       // Sanitize the path to ensure it is within the root storage location
-      Path folderPath = sanitizePath(path);
-      if (Files.notExists(folderPath)) {
-        throw new StorageException("Path does not exist: " + path);
-      }
-      Path targetLocation = folderPath.resolve(name != null ? name : file.getOriginalFilename());
-      if (Files.exists(targetLocation)) {
-        throw new StorageException("File already exists");
-      }
+      Path targetPath = sanitizePath(path);
+      Files.createDirectories(targetPath.getParent());
       try (InputStream inputStream = file.getInputStream()) {
-        Files.copy(inputStream, targetLocation, StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(inputStream, targetPath, StandardCopyOption.REPLACE_EXISTING);
       }
-      return rootPath.relativize(targetLocation).toString();
+      return rootPath.relativize(targetPath).toString();
     } catch (Exception e) {
       throw new StorageException("Failed to store file " + file.getOriginalFilename(), e);
     }
   }
 
+  // ============================ COPY FILE ============================
+
+  /**
+   * Copy a file from the source path to the target path.
+   *
+   * @param sourcePath the path of the file to copy
+   * @param targetPath the path where the file should be copied
+   * @return the relative path of the copied file
+   * @throws StorageException if the source file does not exist or cannot be copied
+   */
+  @Override
+  public String copyFile(String sourcePath, String targetPath) {
+    Path sourceLocation = sanitizePath(sourcePath);
+    Path targetLocation = sanitizePath(targetPath);
+
+    if (Files.notExists(sourceLocation)) {
+      throw new StorageException("Source file does not exist: " + sourcePath);
+    }
+
+    try {
+      // Ensure the target directory exists
+      Files.createDirectories(targetLocation.getParent());
+      Files.copy(sourceLocation, targetLocation, StandardCopyOption.REPLACE_EXISTING);
+      return rootPath.relativize(targetLocation).toString();
+    } catch (IOException e) {
+      throw new StorageException("Failed to copy file from " + sourcePath + " to " + targetPath, e);
+    }
+  }
+
+  // ============================ LOAD FILE AS RESOURCE ============================
   /**
    * Load a file as a resource from the specified path.
    *
@@ -126,6 +153,7 @@ public class StorageServiceImpl implements StorageService {
     }
   }
 
+  // ============================ DELETE FILE ============================
   /**
    * Delete a file at the specified path.
    *

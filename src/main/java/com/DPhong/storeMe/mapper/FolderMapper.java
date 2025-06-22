@@ -13,7 +13,8 @@ import org.mapstruct.ReportingPolicy;
     uses = {UserMapper.class, FileMapper.class})
 public interface FolderMapper extends GenericMapper<Folder, FolderRequestDTO, FolderResponseDTO> {
 
-    @Override
-    @Mapping(source = "parentFolder.id", target = "parentFolderId")
-    FolderResponseDTO entityToResponse(Folder entity);
+  @Override
+  @Mapping(source = "parentFolder.id", target = "parentFolderId")
+  @Mapping(source = "user.id", target = "userId")
+  FolderResponseDTO entityToResponse(Folder entity);
 }

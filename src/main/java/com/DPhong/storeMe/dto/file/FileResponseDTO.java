@@ -1,25 +1,17 @@
 package com.DPhong.storeMe.dto.file;
 
+import com.DPhong.storeMe.dto.fileSystemNode.FSResponseDTO;
 import java.time.Instant;
-
-import com.DPhong.storeMe.entity.BaseEntity;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-public class FileResponseDTO extends BaseEntity {
-  private String name;
-
-  private Long size;
+public class FileResponseDTO extends FSResponseDTO {
 
   private String mimeType;
 
   private String extension;
-
-  private String path;
-
-  private Long userId;
 
   private Instant lastAccessed;
 
