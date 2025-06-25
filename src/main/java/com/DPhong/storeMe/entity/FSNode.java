@@ -1,9 +1,11 @@
 package com.DPhong.storeMe.entity;
 
+import com.DPhong.storeMe.enums.FSType;
 import jakarta.persistence.Column;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.MappedSuperclass;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -12,8 +14,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-@MappedSuperclass
-public abstract class FileSystemNode extends BaseEntity {
+public class FSNode extends BaseEntity {
   @Column(nullable = false)
   private String name;
 
@@ -28,7 +29,18 @@ public abstract class FileSystemNode extends BaseEntity {
   @Column(columnDefinition = "BIGINT[]")
   private List<Long> ancestor = new ArrayList<>();
 
-  private Instant deletedAt;
+  @ManyToOne
+  @JoinColumn(name = "parent_id")
+  private FSNode parent;
 
-  public abstract boolean isDirectory();
+  @Enumerated(EnumType.STRING)
+  private FSType type;
+
+  private boolean isHidden = false;
+
+  private boolean isLocked = false;
+
+  private Instant lastAccessed;
+
+  private Instant deletedAt;
 }

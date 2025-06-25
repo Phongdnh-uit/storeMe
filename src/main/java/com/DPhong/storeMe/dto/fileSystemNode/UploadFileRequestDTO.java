@@ -1,4 +1,4 @@
-package com.DPhong.storeMe.dto.file;
+package com.DPhong.storeMe.dto.fileSystemNode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -8,7 +8,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 @Getter
 @Setter
-public class FileRequestDTO {
-  private Long folderId;
-  List<MultipartFile> files = new ArrayList<>();
+public class UploadFileRequestDTO extends FSRequestDTO {
+  private List<MultipartFile> files = new ArrayList<>();
 }

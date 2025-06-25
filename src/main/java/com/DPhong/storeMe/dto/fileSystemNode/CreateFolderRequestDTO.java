@@ -1,22 +1,18 @@
 package com.DPhong.storeMe.dto.fileSystemNode;
 
-import com.DPhong.storeMe.enums.FSAction;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-public class UpdateFSNodeRequestDTO {
-  @NotNull private Long parentId;
+public class CreateFolderRequestDTO extends FSRequestDTO {
 
   @NotBlank
-  @Size(max = 255, message = "Max length of name is 255 characters")
-  private String name;
+  @Size(max = 255, message = "Max length is 255 characters")
+  String name;
 
-  @NotNull private FSAction action;
   private boolean isHidden = false;
   private boolean isLocked = false;
 }

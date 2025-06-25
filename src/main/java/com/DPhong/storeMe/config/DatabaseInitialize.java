@@ -1,15 +1,11 @@
 package com.DPhong.storeMe.config;
 
-import com.DPhong.storeMe.constant.FolderConstant;
 import com.DPhong.storeMe.dto.authentication.RegisterRequestDTO;
-import com.DPhong.storeMe.entity.Folder;
 import com.DPhong.storeMe.entity.Role;
 import com.DPhong.storeMe.entity.User;
-import com.DPhong.storeMe.enums.FolderType;
 import com.DPhong.storeMe.enums.LoginProvider;
 import com.DPhong.storeMe.enums.RoleName;
 import com.DPhong.storeMe.enums.UserStatus;
-import com.DPhong.storeMe.repository.FolderRepository;
 import com.DPhong.storeMe.repository.RoleRepository;
 import com.DPhong.storeMe.repository.UserRepository;
 import jakarta.validation.ConstraintViolation;
@@ -29,7 +25,6 @@ public class DatabaseInitialize implements ApplicationRunner {
   private final RoleRepository roleRepository;
   private final PasswordEncoder passwordEncoder;
   private final UserRepository userRepository;
-  private final FolderRepository folderRepository;
   private final Validator validator;
 
   @Value("${admin.username}")
@@ -111,33 +106,5 @@ public class DatabaseInitialize implements ApplicationRunner {
     adminUser.setStatus(UserStatus.ACTIVE);
     adminUser.setLoginProvider(LoginProvider.LOCAL);
     userRepository.save(adminUser);
-    initializeFolder(adminUser);
-  }
-
-  // ============================ FOLDER (OPTIONAL) ============================
-  private void initializeFolder(User user) {
-    // Create the root folder for the user
-    Folder userRootFolder = new Folder();
-    userRootFolder.setUser(user);
-    userRootFolder.setName(FolderConstant.USER_ROOT);
-    userRootFolder.setType(FolderType.USERROOT);
-    userRootFolder.setLocked(true);
-    folderRepository.save(userRootFolder);
-
-    // Create the trash folder for the user
-    Folder trashFolder = new Folder();
-    trashFolder.setUser(user);
-    trashFolder.setName(FolderConstant.TRASH);
-    trashFolder.setType(FolderType.TRASH);
-    trashFolder.setLocked(true);
-    folderRepository.save(trashFolder);
-
-    // Create the shared folder for the user
-    Folder sharedFolder = new Folder();
-    sharedFolder.setUser(user);
-    sharedFolder.setName(FolderConstant.SHARED);
-    sharedFolder.setType(FolderType.SHARED);
-    sharedFolder.setLocked(true);
-    folderRepository.save(sharedFolder);
   }
 }
