@@ -8,6 +8,7 @@ import com.DPhong.storeMe.dto.fileSystemNode.UploadFileRequestDTO;
 import com.DPhong.storeMe.entity.FSNode;
 import com.DPhong.storeMe.entity.FileMetadata;
 import com.DPhong.storeMe.entity.User;
+import com.DPhong.storeMe.entity.UserPlan;
 import com.DPhong.storeMe.enums.FSType;
 import com.DPhong.storeMe.exception.DataConflictException;
 import com.DPhong.storeMe.exception.ResourceNotFoundException;
@@ -19,6 +20,7 @@ import com.DPhong.storeMe.repository.UserRepository;
 import com.DPhong.storeMe.security.SecurityUtils;
 import com.DPhong.storeMe.service.general.StorageService;
 import com.DPhong.storeMe.service.general.TikaAnalysis;
+import com.DPhong.storeMe.service.userPlan.UserPlanService;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
@@ -39,6 +41,7 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 public class FSNodeServiceImpl implements FSNodeService {
 
+  private final UserPlanService userPlanService;
   private final UserRepository userRepository;
   private final FSNodeRepository repository;
   private final SecurityUtils securityUtils;
@@ -123,20 +126,32 @@ public class FSNodeServiceImpl implements FSNodeService {
   @Override
   public List<FSResponseDTO> uploadFiles(UploadFileRequestDTO request) {
     // 1. ---- Validate ----
-    // check if user has enough storage space
-    User user =
-        userRepository
-            .findById(securityUtils.getCurrentUserId())
-            .orElseThrow(() -> new ResourceNotFoundException("User not found."));
-    long totalSize = request.getFiles().stream().mapToLong(MultipartFile::getSize).sum();
-    // if (user.getTotalUsage() + totalSize > user.getUserPlans().get)
+    Long userId = securityUtils.getCurrentUserId();
+    // 1.1 ---- Check if user has a plan ----
+    UserPlan userPlan =
+        userPlanService
+            .getCurrentUserPlanIfExists(userId)
+            .orElseThrow(
+                () -> new ResourceNotFoundException("User has not subscribed to any plan."));
+    User user = userPlan.getUser();
+    // 1.2 ---- Check if user has enough storage ----
+    Long totalSize = request.getFiles().stream().mapToLong(MultipartFile::getSize).sum();
+    if (totalSize + user.getTotalUsage() > userPlan.getStoragePlan().getStorageLimit()) {
+      throw new DataConflictException(
+          "Total file size exceeds the storage limit of the current plan.");
+    }
     FSNode parentFolder =
         request.getParentId() == null
             ? null
             : validateParentFolder(request.getParentId(), securityUtils.getCurrentUserId());
     List<FSNode> items = getItemInNode(request.getParentId());
+    Set<String> existingFileNames =
+        items.stream()
+            .filter(item -> item.getType() == FSType.FILE)
+            .map(FSNode::getName)
+            .collect(HashSet::new, HashSet::add, HashSet::addAll);
     Instant now = Instant.now();
-    // 3. ---- Save each file ----
+    // 2. ---- Save each file ----
     List<FSResponseDTO> responseList = new ArrayList<>();
     for (MultipartFile file : request.getFiles()) {
       FSNode fileNode = new FSNode();
@@ -144,7 +159,9 @@ public class FSNodeServiceImpl implements FSNodeService {
       fileNode.setUser(user);
       fileNode.setSize(file.getSize());
       // PROBLEM: fileName could be existing in the folder
-      fileNode.setName(file.getOriginalFilename());
+      // 3. ---- Rename file if exists ----
+      fileNode.setName(getUniqueFileName(file.getOriginalFilename(), existingFileNames));
+      // Set additional properties
       fileNode.setParent(parentFolder);
       fileNode.setLastAccessed(now);
       if (parentFolder != null) {
@@ -167,14 +184,7 @@ public class FSNodeServiceImpl implements FSNodeService {
       metadata.setBlobKey(blobKey);
       fileMetadataRepository.save(metadata);
       // 5. ---- Save file to blob storage ----
-      String path =
-          blobKey.substring(0, 2)
-              + "/"
-              + blobKey.substring(2, 4)
-              + "/"
-              + blobKey.substring(4, 6)
-              + "/"
-              + blobKey.substring(6);
+      String path = generateBlobPath(blobKey);
       storageService.storeFile(path, file);
     }
     // 6. ---- Update user storage usage ----
@@ -319,5 +329,41 @@ public class FSNodeServiceImpl implements FSNodeService {
             () ->
                 new ResourceNotFoundException(
                     "Parent folder not found or does not belong to current user."));
+  }
+
+  // ============================ HELPER ============================
+  private String getUniqueFileName(String originalFileName, Set<String> existingFileNames) {
+    if (originalFileName == null) {
+      originalFileName = UUID.randomUUID().toString();
+    }
+
+    String base = originalFileName;
+    String ext = "";
+
+    int dot = originalFileName.lastIndexOf('.');
+    if (dot != -1) {
+      base = originalFileName.substring(0, dot);
+      ext = originalFileName.substring(dot);
+    }
+
+    String candidate = base + ext;
+    int i = 1;
+    while (existingFileNames.contains(candidate)) {
+      candidate = base + " (" + i + ")" + ext;
+      i++;
+    }
+
+    existingFileNames.add(candidate);
+    return candidate;
+  }
+
+  private String generateBlobPath(String blobKey) {
+    return blobKey.substring(0, 2)
+        + "/"
+        + blobKey.substring(2, 4)
+        + "/"
+        + blobKey.substring(4, 6)
+        + "/"
+        + blobKey.substring(6);
   }
 }

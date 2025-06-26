@@ -23,4 +23,7 @@ public interface FSNodeService {
   void delete(Long id);
 
   void deleteMany(List<Long> ids);
+
+  // TODO: restore node
+  // TODO: clone job delete file
 }
