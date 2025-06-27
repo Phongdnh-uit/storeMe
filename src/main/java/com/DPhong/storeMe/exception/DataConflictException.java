@@ -1,21 +1,26 @@
 package com.DPhong.storeMe.exception;
 
-import java.util.HashMap;
-import java.util.Map;
-
+import com.DPhong.storeMe.dto.FieldError;
+import com.DPhong.storeMe.enums.ErrorCode;
+import java.util.List;
 import lombok.Getter;
 
 @Getter
-public class DataConflictException extends RuntimeException {
+public class DataConflictException extends BaseException {
 
-  private final Map<String, String> details = new HashMap<>();
-
-  public DataConflictException(String message) {
-    super(message);
+  public DataConflictException() {
+    super(ErrorCode.RESOURCE_CONFLICT);
   }
 
-  public DataConflictException(String message, Map<String, String> details) {
-    super(message);
-    this.details.putAll(details);
+  public DataConflictException(String message) {
+    super(ErrorCode.RESOURCE_CONFLICT, message);
+  }
+
+  public DataConflictException(String customMessage, List<FieldError> fieldErrors) {
+    super(ErrorCode.RESOURCE_CONFLICT, customMessage);
+  }
+
+  public DataConflictException(List<FieldError> fieldErrors) {
+    super(ErrorCode.RESOURCE_CONFLICT, fieldErrors);
   }
 }

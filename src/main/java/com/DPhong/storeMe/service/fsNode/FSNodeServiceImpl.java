@@ -10,6 +10,7 @@ import com.DPhong.storeMe.entity.FileMetadata;
 import com.DPhong.storeMe.entity.User;
 import com.DPhong.storeMe.entity.UserPlan;
 import com.DPhong.storeMe.enums.FSType;
+import com.DPhong.storeMe.exception.BadRequestException;
 import com.DPhong.storeMe.exception.DataConflictException;
 import com.DPhong.storeMe.exception.ResourceNotFoundException;
 import com.DPhong.storeMe.exception.TikaAnalysisException;
@@ -25,8 +26,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -195,9 +198,32 @@ public class FSNodeServiceImpl implements FSNodeService {
 
   // ============================ UPDATE FSNODE: RENAME, MOVE, COPY ============================
   @Override
-  public FSResponseDTO update(UpdateFSNodeRequestDTO request) {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("Unimplemented method 'update'");
+  public FSResponseDTO update(Long id, UpdateFSNodeRequestDTO request) {
+    // 1. ---- Validate ----
+    FSNode fsNode = getItemById(id);
+    FSNode parentFolder =
+        request.getParentId() == null
+            ? null
+            : validateParentFolder(request.getParentId(), securityUtils.getCurrentUserId());
+    List<FSNode> items = getItemInNode(request.getParentId());
+    if (items.stream()
+        .anyMatch(item -> item.getName().equals(request.getName()) && !item.getId().equals(id))) {
+      throw new DataConflictException("File system node with this name already exists.");
+    }
+    //  2. ---- Handle in each case ----
+    switch (request.getAction()) {
+      case RENAME:
+        fsNode.setName(request.getName());
+        fsNode.setLastAccessed(Instant.now());
+        return fsNodeMapper.entityToResponse(repository.save(fsNode));
+      case MOVE:
+        // Move item to another folder
+        fsNode = moveItem(fsNode, parentFolder);
+        return fsNodeMapper.entityToResponse(fsNode);
+      case COPY:
+    }
+    throw new UnsupportedOperationException(
+        "Action " + request.getAction() + " is not supported yet.");
   }
 
   // ============================ DELETE ITEM ============================
@@ -316,6 +342,20 @@ public class FSNodeServiceImpl implements FSNodeService {
     return repository.findAll(spec);
   }
 
+  private FSNode getItemById(Long id) {
+    return repository
+        .findOne(
+            (root, _, builder) ->
+                builder.and(
+                    builder.equal(root.get("id"), id),
+                    builder.equal(root.get("user").get("id"), securityUtils.getCurrentUserId()),
+                    builder.isNull(root.get("deletedAt"))))
+        .orElseThrow(
+            () ->
+                new ResourceNotFoundException(
+                    "Item not found or does not belong to current user."));
+  }
+
   private FSNode validateParentFolder(Long parentId, Long userId) {
     return repository
         .findOne(
@@ -331,7 +371,6 @@ public class FSNodeServiceImpl implements FSNodeService {
                     "Parent folder not found or does not belong to current user."));
   }
 
-  // ============================ HELPER ============================
   private String getUniqueFileName(String originalFileName, Set<String> existingFileNames) {
     if (originalFileName == null) {
       originalFileName = UUID.randomUUID().toString();
@@ -365,5 +404,163 @@ public class FSNodeServiceImpl implements FSNodeService {
         + blobKey.substring(4, 6)
         + "/"
         + blobKey.substring(6);
+  }
+
+  private FSNode moveItem(FSNode fsNode, FSNode parentFolder) {
+    if (fsNode.getParent() == parentFolder) {
+      return fsNode;
+    }
+
+    // 1. ---- Check if parent is child of fsNode ----
+    if (parentFolder != null && fsNode.getAncestor().contains(parentFolder.getId())) {
+      throw new BadRequestException("Cannot move item to its own child folder.");
+    }
+
+    // 2. ---- Update fsNode's parent and ancestor ----
+    fsNode.setParent(parentFolder);
+    List<Long> newAncestor = new ArrayList<>();
+    if (parentFolder != null) {
+      newAncestor.addAll(parentFolder.getAncestor());
+      newAncestor.add(parentFolder.getId());
+    }
+    fsNode.setAncestor(newAncestor);
+    fsNode.setLastAccessed(Instant.now());
+    fsNode = repository.save(fsNode);
+
+    // 3. ---- Update all sub-nodes' ancestor ----
+    Long fsNodeId = fsNode.getId();
+    List<FSNode> subNodes =
+        repository.findAll(
+            (root, _, builder) ->
+                builder.and(
+                    builder.isMember(fsNodeId, root.get("ancestor")),
+                    builder.equal(root.get("user").get("id"), securityUtils.getCurrentUserId()),
+                    builder.isNull(root.get("deletedAt"))));
+    subNodes.stream()
+        .forEach(
+            node -> {
+              int index = node.getAncestor().indexOf(fsNodeId);
+              node.getAncestor().subList(0, index + 1).clear();
+              node.getAncestor().addAll(0, newAncestor);
+            });
+    repository.saveAll(subNodes);
+    return fsNode;
+  }
+
+  private FSNode copy(FSNode fsNode, FSNode parentFolder) {
+    if (fsNode.getParent() == parentFolder) {
+      return fsNode;
+    }
+    // 1. ---- Clone basic info ----
+    FSNode copiedNode = shallowCopyFSNode(fsNode);
+    copiedNode.setParent(parentFolder);
+    List<Long> newAncestor = new ArrayList<>();
+    if (parentFolder != null) {
+      newAncestor.addAll(parentFolder.getAncestor());
+      newAncestor.add(parentFolder.getId());
+    }
+    copiedNode.setAncestor(newAncestor);
+    copiedNode.setLastAccessed(Instant.now());
+    copiedNode = repository.save(copiedNode);
+
+    // 2. ---- Clone fileMetadata ----
+    if (fsNode.getFileMetadata() != null) {
+      FileMetadata metadata = cloneFileMetadata(fsNode.getFileMetadata());
+      metadata.setFile(copiedNode);
+      fileMetadataRepository.save(metadata);
+    }
+
+    // 3. ---- Clone all sub-nodes ----
+    Long fsNodeId = fsNode.getId();
+    List<FSNode> subNodes =
+        repository.findAll(
+            (root, _, builder) ->
+                builder.and(
+                    builder.isMember(fsNodeId, root.get("ancestor")),
+                    builder.equal(root.get("user").get("id"), securityUtils.getCurrentUserId()),
+                    builder.isNull(root.get("deletedAt"))));
+
+    // 4. ---- Prepare to copy sub-nodes ----
+    // Map to keep track of copied node IDs 1 - 1
+    Map<Long, Long> idMap = new HashMap<>();
+
+    Map<Long, FSNode> originalNodeMap =
+        subNodes.stream()
+            .collect(HashMap::new, (map, node) -> map.put(node.getId(), node), HashMap::putAll);
+    originalNodeMap.put(fsNode.getId(), fsNode);
+
+    Map<Long, FSNode> copiedNodeMap = new HashMap<>();
+    copiedNodeMap.put(copiedNode.getId(), copiedNode);
+
+    List<FSNode> copiedSubNodes = new ArrayList<>();
+    List<FileMetadata> copiedMetadataList = new ArrayList<>();
+    for (FSNode subNode : subNodes) {
+      // Clone sub-node basic info
+      FSNode copiedSubNode = shallowCopyFSNode(subNode);
+      copiedSubNode = repository.save(copiedSubNode);
+      // Update the ID map 2-way
+      idMap.put(subNode.getId(), copiedSubNode.getId());
+      idMap.put(copiedSubNode.getId(), subNode.getId());
+      // Add to copied node map
+      copiedNodeMap.put(copiedSubNode.getId(), copiedSubNode);
+      copiedSubNodes.add(copiedSubNode);
+      // Clone file metadata if exists
+      if (subNode.getFileMetadata() != null) {
+        FileMetadata copiedMetadata = cloneFileMetadata(subNode.getFileMetadata());
+        copiedMetadata.setFile(copiedSubNode);
+        copiedMetadataList.add(copiedMetadata);
+      }
+    }
+    // assign parent & rebuild ancestor
+    for (FSNode copiedSubNode : copiedSubNodes) {
+      // Build ancestor
+      FSNode oldNode = originalNodeMap.get(idMap.get(copiedSubNode.getId()));
+      List<Long> newSubAncestor = new ArrayList<>(oldNode.getAncestor());
+      int index = newSubAncestor.indexOf(fsNodeId);
+      if (index != -1) {
+        newSubAncestor.subList(0, index + 1).clear();
+        newSubAncestor.addAll(0, newAncestor);
+      }
+      for (int i = index + 1; i < newSubAncestor.size(); i++) {
+        Long oldId = newSubAncestor.get(i);
+        Long newId = idMap.get(oldId);
+        if (newId != null) {
+          newSubAncestor.set(i, newId);
+        }
+      }
+      copiedSubNode.setAncestor(newSubAncestor);
+      // Set parent
+      copiedSubNode.setParent(copiedNodeMap.get(newSubAncestor.getLast()));
+    }
+
+    // 4. ---- Save all copied nodes and metadata ----
+    repository.saveAll(copiedSubNodes);
+    fileMetadataRepository.saveAll(copiedMetadataList);
+
+    return copiedNode;
+  }
+
+  private FileMetadata cloneFileMetadata(FileMetadata metadata) {
+    FileMetadata copiedFileMetadata = new FileMetadata();
+    copiedFileMetadata.setMimeType(metadata.getMimeType());
+    copiedFileMetadata.setExtension(metadata.getExtension());
+    String blobKey = UUID.randomUUID().toString();
+    copiedFileMetadata.setBlobKey(blobKey);
+    String oldPath = generateBlobPath(metadata.getBlobKey());
+    String newPath = generateBlobPath(blobKey);
+    storageService.copyFile(oldPath, newPath);
+    return copiedFileMetadata;
+  }
+
+  private FSNode shallowCopyFSNode(FSNode fsNode) {
+    FSNode copiedNode = new FSNode();
+    copiedNode.setName(fsNode.getName());
+    copiedNode.setType(fsNode.getType());
+    copiedNode.setSize(fsNode.getSize());
+    copiedNode.setUser(fsNode.getUser());
+    copiedNode.setHidden(fsNode.isHidden());
+    copiedNode.setLocked(fsNode.isLocked());
+    copiedNode.setLastAccessed(Instant.now());
+    return repository.save(copiedNode);
   }
 }

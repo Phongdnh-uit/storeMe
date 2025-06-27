@@ -18,7 +18,7 @@ public interface FSNodeService {
 
   List<FSResponseDTO> uploadFiles(UploadFileRequestDTO request);
 
-  FSResponseDTO update(UpdateFSNodeRequestDTO request);
+  FSResponseDTO update(Long id, UpdateFSNodeRequestDTO request);
 
   void delete(Long id);
 

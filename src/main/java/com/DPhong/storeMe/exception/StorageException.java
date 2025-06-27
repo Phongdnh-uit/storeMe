@@ -1,13 +1,24 @@
 package com.DPhong.storeMe.exception;
 
-public class StorageException extends RuntimeException {
-  private static final long serialVersionUID = 1L;
+import com.DPhong.storeMe.dto.FieldError;
+import com.DPhong.storeMe.enums.ErrorCode;
+import java.util.List;
 
-  public StorageException(String message) {
-    super(message);
+public class StorageException extends BaseException {
+
+  public StorageException(ErrorCode errorCode) {
+    super(errorCode);
   }
 
-  public StorageException(String message, Throwable cause) {
-    super(message, cause);
+  public StorageException(ErrorCode errorCode, String customMessage) {
+    super(errorCode, customMessage);
+  }
+
+  public StorageException(ErrorCode errorCode, List<FieldError> fieldErrors) {
+    super(errorCode, fieldErrors);
+  }
+
+  public StorageException(ErrorCode errorCode, String customMessage, List<FieldError> fieldErrors) {
+    super(errorCode, customMessage, fieldErrors);
   }
 }
