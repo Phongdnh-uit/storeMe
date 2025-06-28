@@ -12,7 +12,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "file_metadatas")
+@Table(name = "file_metadata")
 public class FileMetadata extends BaseEntity {
 
   @OneToOne

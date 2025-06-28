@@ -11,10 +11,12 @@ import com.DPhong.storeMe.entity.FSNode;
 import com.DPhong.storeMe.service.fsNode.FSNodeService;
 import com.turkraft.springfilter.boot.Filter;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -41,8 +43,14 @@ public class FSNodeController {
   @GetMapping
   public ResponseEntity<ApiResponse<PageResponse<FSResponseDTO>>> getAllNodes(
       @RequestParam(value = "parentId", required = false) Long parentId,
-      Pageable pageable,
-      @Filter Specification<FSNode> specification) {
+      @ParameterObject Pageable pageable,
+      @Parameter(
+              name = "filter",
+              description = "Bộ lọc thông qua cú pháp truy vấn turkraft/springfilter",
+              example = "name~'abc'",
+              required = false)
+          @Filter
+          Specification<FSNode> specification) {
     pageable = pageable.isPaged() ? pageable : Pageable.unpaged();
     return ResponseEntity.ok(
         ApiResponse.success(fsNodeService.getAll(parentId, specification, pageable)));

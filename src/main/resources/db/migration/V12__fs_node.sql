@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS fs_nodes (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_by BIGINT,
     updated_by BIGINT,
+    version BIGINT DEFAULT 1,
   -- foreign keys
     CONSTRAINT fk_fsnode_user FOREIGN KEY (user_id) REFERENCES users(id),
     CONSTRAINT fk_fsnode_parent FOREIGN KEY (parent_id) REFERENCES fs_nodes(id)
@@ -30,6 +31,7 @@ CREATE TABLE IF NOT EXISTS file_metadata (
     mime_type VARCHAR(255),
     extension VARCHAR(50),
     blob_key VARCHAR(255),
+    version BIGINT DEFAULT 1,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     created_by BIGINT,

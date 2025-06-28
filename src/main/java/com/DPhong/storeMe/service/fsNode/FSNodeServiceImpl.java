@@ -23,6 +23,7 @@ import com.DPhong.storeMe.security.SecurityUtils;
 import com.DPhong.storeMe.service.general.StorageService;
 import com.DPhong.storeMe.service.general.TikaAnalysis;
 import com.DPhong.storeMe.service.userPlan.UserPlanService;
+import jakarta.persistence.criteria.Expression;
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Instant;
@@ -128,8 +129,10 @@ public class FSNodeServiceImpl implements FSNodeService {
     }
 
     // 2. ---- Object ----
-    User user = new User();
-    user.setId(securityUtils.getCurrentUserId());
+    User user =
+        userRepository
+            .findById(securityUtils.getCurrentUserId())
+            .orElseThrow(() -> new ResourceNotFoundException("User not found."));
 
     // 2. ---- Create new folder ----
     FSNode fsNode = new FSNode();
@@ -271,6 +274,9 @@ public class FSNodeServiceImpl implements FSNodeService {
         fsNode = moveItem(fsNode, parentFolder);
         return fsNodeMapper.entityToResponse(fsNode);
       case COPY:
+        // Copy item to another folder
+        fsNode = copy(fsNode, parentFolder);
+        return fsNodeMapper.entityToResponse(fsNode);
     }
     throw new UnsupportedOperationException(
         "Action " + request.getAction() + " is not supported yet.");
@@ -303,11 +309,15 @@ public class FSNodeServiceImpl implements FSNodeService {
     // 2. ---- Delete sub node ----
     List<FSNode> subNodes =
         repository.findAll(
-            (root, _, builder) ->
-                builder.and(
-                    builder.isMember(id, root.get("ancestor")),
-                    builder.equal(root.get("user").get("id"), securityUtils.getCurrentUserId()),
-                    builder.isNull(root.get("deletedAt"))));
+            (root, _, builder) -> {
+              Expression<Integer> pos =
+                  builder.function(
+                      "array_position", Integer.class, root.get("ancestor"), builder.literal(id));
+              return builder.and(
+                  builder.greaterThan(pos, 0),
+                  builder.equal(root.get("user").get("id"), securityUtils.getCurrentUserId()),
+                  builder.isNull(root.get("deletedAt")));
+            });
     subNodes.stream()
         .forEach(
             subNode -> {
@@ -479,13 +489,7 @@ public class FSNodeServiceImpl implements FSNodeService {
 
     // 3. ---- Update all sub-nodes' ancestor ----
     Long fsNodeId = fsNode.getId();
-    List<FSNode> subNodes =
-        repository.findAll(
-            (root, _, builder) ->
-                builder.and(
-                    builder.isMember(fsNodeId, root.get("ancestor")),
-                    builder.equal(root.get("user").get("id"), securityUtils.getCurrentUserId()),
-                    builder.isNull(root.get("deletedAt"))));
+    List<FSNode> subNodes = getSubNodes(fsNode);
     subNodes.stream()
         .forEach(
             node -> {
@@ -522,14 +526,7 @@ public class FSNodeServiceImpl implements FSNodeService {
 
     // 3. ---- Clone all sub-nodes ----
     Long fsNodeId = fsNode.getId();
-    List<FSNode> subNodes =
-        repository.findAll(
-            (root, _, builder) ->
-                builder.and(
-                    builder.isMember(fsNodeId, root.get("ancestor")),
-                    builder.equal(root.get("user").get("id"), securityUtils.getCurrentUserId()),
-                    builder.isNull(root.get("deletedAt"))));
-
+    List<FSNode> subNodes = getSubNodes(fsNode);
     // 4. ---- Prepare to copy sub-nodes ----
     // Map to keep track of copied node IDs 1 - 1
     Map<Long, Long> idMap = new HashMap<>();
@@ -612,5 +609,21 @@ public class FSNodeServiceImpl implements FSNodeService {
     copiedNode.setLocked(fsNode.isLocked());
     copiedNode.setLastAccessed(Instant.now());
     return repository.save(copiedNode);
+  }
+
+  private List<FSNode> getSubNodes(FSNode fsNode) {
+    return repository.findAll(
+        (root, _, builder) -> {
+          Expression<Integer> pos =
+              builder.function(
+                  "array_position",
+                  Integer.class,
+                  root.get("ancestor"),
+                  builder.literal(fsNode.getId()));
+          return builder.and(
+              builder.greaterThan(pos, 0),
+              builder.equal(root.get("user").get("id"), securityUtils.getCurrentUserId()),
+              builder.isNull(root.get("deletedAt")));
+        });
   }
 }
