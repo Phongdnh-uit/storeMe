@@ -4,7 +4,7 @@ import com.DPhong.storeMe.dto.FieldError;
 import com.DPhong.storeMe.enums.ErrorCode;
 import java.util.List;
 
-public class ResourceNotFoundException extends BaseException {
+public class ResourceNotFoundException extends ApiException {
 
   public ResourceNotFoundException() {
     super(ErrorCode.RESOURCE_NOT_FOUND);

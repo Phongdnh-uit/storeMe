@@ -1,12 +1,12 @@
 package com.DPhong.storeMe.security;
 
 import com.DPhong.storeMe.entity.User;
+import com.DPhong.storeMe.enums.ErrorCode;
 import com.DPhong.storeMe.enums.LoginProvider;
-import com.DPhong.storeMe.exception.BadRequestException;
+import com.DPhong.storeMe.exception.AuthException;
 import com.DPhong.storeMe.repository.UserRepository;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.authentication.AccountStatusException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -30,15 +30,15 @@ public class DomainUserDetailService implements UserDetailsService {
                     new UsernameNotFoundException(
                         "User " + login + " was not found in the database"));
     if (userFromDatabase.getLoginProvider() != LoginProvider.LOCAL) {
-      throw new BadRequestException("Login provider is not local");
+      throw new AuthException(ErrorCode.LOGIN_PROVIDER_NOT_SUPPORTED);
     }
     switch (userFromDatabase.getStatus()) {
       case UNVERIFIED:
-        throw new AccountStatusException("Account is not verified") {};
+        throw new AuthException(ErrorCode.USER_UNVERIFIED);
       case BLOCKED:
-        throw new AccountStatusException("Account is blocked") {};
+        throw new AuthException(ErrorCode.USER_DISABLED);
       case DELETED:
-        throw new AccountStatusException("Account is deleted") {};
+        throw new AuthException(ErrorCode.USER_NOT_FOUND);
       default:
         break;
     }

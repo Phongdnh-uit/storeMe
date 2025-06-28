@@ -6,7 +6,7 @@ import java.util.List;
 import lombok.Getter;
 
 @Getter
-public class BaseException extends RuntimeException {
+public class ApiException extends RuntimeException {
   private static final long serialVersionUID = 1L;
   private final ErrorCode errorCode;
   private final List<FieldError> fieldErrors;
@@ -15,7 +15,7 @@ public class BaseException extends RuntimeException {
    * Constructor for BaseException with error code. * @param errorCode: the error code representing
    * the type of error * @return: a BaseException instance with the specified error code
    */
-  public BaseException(ErrorCode errorCode) {
+  public ApiException(ErrorCode errorCode) {
     super(errorCode.getMessage());
     this.errorCode = errorCode;
     this.fieldErrors = null;
@@ -29,7 +29,7 @@ public class BaseException extends RuntimeException {
    *     validation issues
    * @return: a BaseException instance with the specified error code and field errors
    */
-  public BaseException(ErrorCode errorCode, List<FieldError> fieldErrors) {
+  public ApiException(ErrorCode errorCode, List<FieldError> fieldErrors) {
     super(errorCode.getMessage());
     this.errorCode = errorCode;
     this.fieldErrors = fieldErrors;
@@ -42,7 +42,7 @@ public class BaseException extends RuntimeException {
    * @param customMessage: a custom message to provide additional context for the error
    * @return: a BaseException instance with the specified error code and custom message
    */
-  public BaseException(ErrorCode errorCode, String customMessage) {
+  public ApiException(ErrorCode errorCode, String customMessage) {
     super(customMessage != null ? customMessage : errorCode.getMessage());
     this.errorCode = errorCode;
     this.fieldErrors = null;
@@ -57,7 +57,7 @@ public class BaseException extends RuntimeException {
    *     validation issues
    * @return: a BaseException instance with the specified error code, custom message, and field
    */
-  public BaseException(ErrorCode errorCode, String customMessage, List<FieldError> fieldErrors) {
+  public ApiException(ErrorCode errorCode, String customMessage, List<FieldError> fieldErrors) {
     super(customMessage != null ? customMessage : errorCode.getMessage());
     this.errorCode = errorCode;
     this.fieldErrors = fieldErrors;

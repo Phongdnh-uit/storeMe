@@ -4,7 +4,7 @@ import com.DPhong.storeMe.dto.FieldError;
 import com.DPhong.storeMe.enums.ErrorCode;
 import java.util.List;
 
-public class StorageException extends BaseException {
+public class StorageException extends ApiException {
 
   public StorageException(ErrorCode errorCode) {
     super(errorCode);

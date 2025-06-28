@@ -9,8 +9,9 @@ import com.DPhong.storeMe.entity.FSNode;
 import com.DPhong.storeMe.entity.FileMetadata;
 import com.DPhong.storeMe.entity.User;
 import com.DPhong.storeMe.entity.UserPlan;
+import com.DPhong.storeMe.enums.ErrorCode;
 import com.DPhong.storeMe.enums.FSType;
-import com.DPhong.storeMe.exception.BadRequestException;
+import com.DPhong.storeMe.exception.ApiException;
 import com.DPhong.storeMe.exception.DataConflictException;
 import com.DPhong.storeMe.exception.ResourceNotFoundException;
 import com.DPhong.storeMe.exception.TikaAnalysisException;
@@ -33,6 +34,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -86,6 +88,28 @@ public class FSNodeServiceImpl implements FSNodeService {
     Page<FSNode> page = repository.findAll(combinedSpec, pageable);
     // 6. ---- Map to response DTOs ----
     return PageResponse.from(page.map(fsNodeMapper::entityToResponse));
+  }
+
+  // ============================ GET ITEM BY ID ============================
+  @Override
+  public FSResponseDTO getById(Long id) {
+    // 1. ---- Get current user id ----
+    Long userId = securityUtils.getCurrentUserId();
+    // 2. ---- Find item by id and userId ----
+    FSNode fsNode =
+        repository
+            .findOne(
+                (root, _, builder) ->
+                    builder.and(
+                        builder.equal(root.get("id"), id),
+                        builder.equal(root.get("user").get("id"), userId),
+                        builder.isNull(root.get("deletedAt"))))
+            .orElseThrow(
+                () ->
+                    new ResourceNotFoundException(
+                        "Item not found or does not belong to current user."));
+    // 3. ---- Map to response DTO ----
+    return fsNodeMapper.entityToResponse(fsNode);
   }
 
   // ============================ CREATE FOLDER ============================
@@ -194,6 +218,32 @@ public class FSNodeServiceImpl implements FSNodeService {
     user.setTotalUsage(user.getTotalUsage() + totalSize);
     userRepository.save(user);
     return responseList;
+  }
+
+  // ============================ GET FILE ============================
+  @Override
+  public Resource getFile(Long id) {
+    FSNode fsNode =
+        repository
+            .findOne(
+                (root, _, builder) ->
+                    builder.and(
+                        builder.equal(root.get("id"), id),
+                        builder.equal(root.get("user").get("id"), securityUtils.getCurrentUserId()),
+                        builder.isNull(root.get("deletedAt"))))
+            .orElseThrow(() -> new ResourceNotFoundException());
+
+    if (fsNode.getType() != FSType.FILE) {
+      throw new ResourceNotFoundException();
+    }
+    FileMetadata fileMetadata = fsNode.getFileMetadata();
+    if (fileMetadata == null) {
+      throw new ApiException(ErrorCode.DATA_INTEGRITY_VIOLATION);
+    }
+    String blobKey = fileMetadata.getBlobKey();
+    String path = generateBlobPath(blobKey);
+    Resource resource = storageService.loadFileAsResource(path);
+    return resource;
   }
 
   // ============================ UPDATE FSNODE: RENAME, MOVE, COPY ============================
@@ -413,7 +463,7 @@ public class FSNodeServiceImpl implements FSNodeService {
 
     // 1. ---- Check if parent is child of fsNode ----
     if (parentFolder != null && fsNode.getAncestor().contains(parentFolder.getId())) {
-      throw new BadRequestException("Cannot move item to its own child folder.");
+      throw new ApiException(ErrorCode.CYCLIC_FILE_DETECTED);
     }
 
     // 2. ---- Update fsNode's parent and ancestor ----

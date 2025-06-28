@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
 
 /**
  * GenericController is a base controller class that provides CRUD operations for entities. The
@@ -46,11 +45,11 @@ public abstract class GenericController<E, I, O> {
       @Parameter(
               name = "filter",
               description = "Bộ lọc thông qua cú pháp truy vấn turkraft/springfilter",
-              example = "name:abc",
+              example = "name~'abc'",
               required = false)
-          @RequestParam(name = "filter", required = false)
           @Filter
           Specification<E> specification) {
+    pageable = pageable.isPaged() ? pageable : Pageable.unpaged();
     return ResponseEntity.ok(ApiResponse.success(service.findAll(specification, pageable)));
   }
 

@@ -14,4 +14,8 @@ import lombok.Setter;
 public class FieldError {
   private String key;
   private String message;
+
+  public static FieldError from(String key, String message) {
+    return FieldError.builder().key(key).message(message).build();
+  }
 }

@@ -6,7 +6,7 @@ import java.util.List;
 import lombok.Getter;
 
 @Getter
-public class DataConflictException extends BaseException {
+public class DataConflictException extends ApiException {
 
   public DataConflictException() {
     super(ErrorCode.RESOURCE_CONFLICT);
