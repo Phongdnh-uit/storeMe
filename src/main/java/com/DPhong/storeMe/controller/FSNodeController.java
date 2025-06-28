@@ -24,6 +24,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -63,9 +64,9 @@ public class FSNodeController {
   }
 
   @Operation(summary = "Tải lên file vào hệ thống file")
-  @PostMapping("/files/upload")
+  @PostMapping(value = "/files/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public ResponseEntity<ApiResponse<List<FSResponseDTO>>> uploadFile(
-      @Valid @RequestBody UploadFileRequestDTO request) {
+      @Valid @ModelAttribute UploadFileRequestDTO request) {
     return ResponseEntity.ok(ApiResponse.success(fsNodeService.uploadFiles(request)));
   }
 
@@ -103,6 +104,28 @@ public class FSNodeController {
   @DeleteMapping
   public ResponseEntity<ApiResponse<Void>> deleteNodes(@RequestParam("ids") List<Long> ids) {
     fsNodeService.deleteMany(ids);
+    return ResponseEntity.ok(ApiResponse.success(null));
+  }
+
+  @Operation(summary = "Lấy danh sách các node đã xoá trong hệ thống file")
+  @GetMapping("/trash")
+  public ResponseEntity<ApiResponse<PageResponse<FSResponseDTO>>> getTrash(
+      @ParameterObject Pageable pageable,
+      @Parameter(
+              name = "filter",
+              description = "Bộ lọc thông qua cú pháp truy vấn turkraft/springfilter",
+              example = "name~'abc'",
+              required = false)
+          @Filter
+          Specification<FSNode> specification) {
+    pageable = pageable.isPaged() ? pageable : Pageable.unpaged();
+    return ResponseEntity.ok(ApiResponse.success(fsNodeService.getTrash(specification, pageable)));
+  }
+
+  @Operation(summary = "Khôi phục một node đã xoá trong hệ thống file")
+  @PostMapping("/trash/restore/{id}")
+  public ResponseEntity<ApiResponse<Void>> restoreNode(@PathVariable("id") Long id) {
+    fsNodeService.restore(id);
     return ResponseEntity.ok(ApiResponse.success(null));
   }
 }

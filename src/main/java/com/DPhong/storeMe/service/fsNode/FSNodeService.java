@@ -29,6 +29,7 @@ public interface FSNodeService {
 
   void deleteMany(List<Long> ids);
 
-  // TODO: restore node
-  // TODO: clone job delete file
+  PageResponse<FSResponseDTO> getTrash(Specification<FSNode> spec, Pageable pageable);
+
+  void restore(Long id);
 }

@@ -250,6 +250,7 @@ public class FSNodeServiceImpl implements FSNodeService {
   }
 
   // ============================ UPDATE FSNODE: RENAME, MOVE, COPY ============================
+  @Transactional
   @Override
   public FSResponseDTO update(Long id, UpdateFSNodeRequestDTO request) {
     // 1. ---- Validate ----
@@ -375,6 +376,56 @@ public class FSNodeServiceImpl implements FSNodeService {
               subNode.setLastAccessed(now);
             });
     repository.saveAll(subNodes);
+  }
+
+  // ============================ GET TRASH ============================
+  @Override
+  public PageResponse<FSResponseDTO> getTrash(Specification<FSNode> spec, Pageable pageable) {
+    // 1. ---- Get current user id ----
+    Long userId = securityUtils.getCurrentUserId();
+    // 2. ---- Build basic spec ----
+    Specification<FSNode> baseSpec =
+        (root, _, builder) ->
+            builder.and(
+                builder.isNull(root.get("parent")), // Only get root items in trash
+                builder.equal(root.get("user").get("id"), userId),
+                builder.isNotNull(root.get("deletedAt")));
+    // 3. ---- Combine base spec with provided spec ----
+    Specification<FSNode> combinedSpec = baseSpec.and(spec);
+    // 4. ---- Find all items in trash with pagination ----
+    Page<FSNode> page = repository.findAll(combinedSpec, pageable);
+    // 5. ---- Map to response DTOs ----
+    return PageResponse.from(page.map(fsNodeMapper::entityToResponse));
+  }
+
+  // ============================ RESTORE ============================
+  @Override
+  public void restore(Long id) {
+    // 1. ---- Get current user id ----
+    Long userId = securityUtils.getCurrentUserId();
+    // 2. ---- Find item by id and userId ----
+    FSNode fsNode =
+        repository
+            .findOne(
+                (root, _, builder) ->
+                    builder.and(
+                        builder.equal(root.get("id"), id),
+                        builder.equal(root.get("user").get("id"), userId),
+                        builder.isNotNull(root.get("deletedAt"))))
+            .orElseThrow(
+                () ->
+                    new ResourceNotFoundException(
+                        "Item not found or does not belong to current user."));
+    // 3. ---- Check if parent is exists through ancestor ----
+    if (!fsNode.getAncestor().isEmpty()) {
+      Long parentId = fsNode.getAncestor().getLast();
+      FSNode parent = validateParentFolder(parentId, userId);
+      fsNode.setParent(parent);
+    }
+    // 3. ---- Restore item by setting deletedAt to null and lastAccessed to now ----
+    fsNode.setDeletedAt(null);
+    fsNode.setLastAccessed(Instant.now());
+    repository.save(fsNode);
   }
 
   // ============================ HELPER METHODS ============================

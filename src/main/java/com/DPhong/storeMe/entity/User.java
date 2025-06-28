@@ -34,7 +34,7 @@ public class User extends BaseEntity {
   private String passwordHash;
 
   @Column(nullable = false)
-  private Long totalUsage;
+  private Long totalUsage = 0L;
 
   @Column(nullable = false)
   @Enumerated(EnumType.STRING)

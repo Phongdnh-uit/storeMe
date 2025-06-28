@@ -151,4 +151,9 @@ public class AuthController {
     refreshTokenService.deleteRefreshToken(refreshToken);
     return ResponseEntity.ok(ApiResponse.success(null));
   }
+
+  @GetMapping("/me")
+  public ResponseEntity<ApiResponse<UserResponseDTO>> getCurrentUser() {
+    return ResponseEntity.ok(ApiResponse.success(userService.getCurrentAccount()));
+  }
 }

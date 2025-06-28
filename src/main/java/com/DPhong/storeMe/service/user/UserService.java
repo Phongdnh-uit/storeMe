@@ -7,6 +7,8 @@ import com.DPhong.storeMe.enums.UserStatus;
 
 public interface UserService {
 
+  UserResponseDTO getCurrentAccount();
+
   UserResponseDTO registerUser(RegisterRequestDTO registerRequestDTO);
 
   void changePassword(ChangePasswordRequestDTO changePasswordRequestDTO);

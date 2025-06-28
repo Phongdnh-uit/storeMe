@@ -33,6 +33,11 @@ public class UserServiceImpl implements UserService {
   private final PasswordEncoder passwordEncoder;
   private final SecurityUtils securityUtils;
 
+  @Override
+  public UserResponseDTO getCurrentAccount() {
+    return userMapper.entityToResponse(getCurrentUser());
+  }
+
   /**
    * Register a new user.
    *
