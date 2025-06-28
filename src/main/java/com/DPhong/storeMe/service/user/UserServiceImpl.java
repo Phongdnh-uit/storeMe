@@ -34,7 +34,7 @@ public class UserServiceImpl implements UserService {
   private final SecurityUtils securityUtils;
 
   @Override
-  public UserResponseDTO getCurrentAccount() {
+  public UserResponseDTO getCurrent() {
     return userMapper.entityToResponse(getCurrentUser());
   }
 

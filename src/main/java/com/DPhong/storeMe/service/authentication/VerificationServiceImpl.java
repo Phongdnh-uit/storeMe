@@ -3,7 +3,9 @@ package com.DPhong.storeMe.service.authentication;
 import com.DPhong.storeMe.constant.VerificationConstant;
 import com.DPhong.storeMe.entity.User;
 import com.DPhong.storeMe.entity.Verification;
+import com.DPhong.storeMe.enums.ErrorCode;
 import com.DPhong.storeMe.enums.VerificationType;
+import com.DPhong.storeMe.exception.AuthException;
 import com.DPhong.storeMe.exception.ResourceNotFoundException;
 import com.DPhong.storeMe.exception.VerificationException;
 import com.DPhong.storeMe.repository.UserRepository;
@@ -28,9 +30,9 @@ public class VerificationServiceImpl implements VerificationService {
             .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     switch (user.getStatus()) {
       case BLOCKED:
-        throw new VerificationException("User is locked");
+        throw new AuthException(ErrorCode.USER_DISABLED);
       case DELETED:
-        throw new VerificationException("User is deleted");
+        throw new AuthException(ErrorCode.USER_NOT_FOUND);
       default:
         break;
     }
