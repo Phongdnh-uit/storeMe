@@ -1,6 +1,5 @@
 package com.DPhong.storeMe.dto;
 
-import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -12,8 +11,11 @@ import lombok.Setter;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class ErrorVO {
-  private String errorMessage;
-  private String errorCode;
-  private List<FieldError> fieldErrors;
+public class FieldError {
+  private String key;
+  private String message;
+
+  public static FieldError from(String key, String message) {
+    return FieldError.builder().key(key).message(message).build();
+  }
 }

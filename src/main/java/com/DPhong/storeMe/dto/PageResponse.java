@@ -4,6 +4,7 @@ import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import org.springframework.data.domain.Page;
 
 @Getter
 @Setter
@@ -14,4 +15,13 @@ public class PageResponse<T> {
   private long totalElements;
   private int size;
   private int number;
+
+  public static <T> PageResponse<T> from(Page<T> page) {
+    return new PageResponse<T>()
+        .setContent(page.getContent())
+        .setTotalPages(page.getTotalPages())
+        .setTotalElements(page.getTotalElements())
+        .setSize(page.getSize())
+        .setNumber(page.getNumber());
+  }
 }

@@ -6,7 +6,6 @@ import com.DPhong.storeMe.dto.userPlan.UserPlanResponseDTO;
 import com.DPhong.storeMe.entity.StoragePlan;
 import com.DPhong.storeMe.entity.User;
 import com.DPhong.storeMe.entity.UserPlan;
-import com.DPhong.storeMe.exception.BadRequestException;
 import com.DPhong.storeMe.exception.ResourceNotFoundException;
 import com.DPhong.storeMe.mapper.UserPlanMapper;
 import com.DPhong.storeMe.repository.StoragePlanRepository;
@@ -28,77 +27,87 @@ public class UserPlanServiceImpl implements UserPlanService {
   private final StoragePlanRepository storagePlanRepository;
   private final UserRepository userRepository;
   private final UserPlanRepository userPlanRepository;
-    private final SecurityUtils securityUtils;
+  private final SecurityUtils securityUtils;
 
+  // ============================ SUBSCRIBE OR UPGRADE PLAN ============================
   @Override
   public UserPlanResponseDTO subscribe(UserPlanRequestDTO userPlanRequestDTO) {
+    // 1. ---- Validate ----
     User user =
         userRepository
-            .findById(securityUtils.getCurrentUserId())
+            .findById(userPlanRequestDTO.getUserId())
             .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     StoragePlan storagePlan =
         storagePlanRepository
             .findById(userPlanRequestDTO.getStoragePlanId())
             .orElseThrow(() -> new ResourceNotFoundException("Storage plan not found"));
-    Optional<UserPlan> currentPlan = userPlanRepository.findByUserIdAndIsActiveTrue(user.getId());
-    if (currentPlan.isPresent()) {
-      if (currentPlan.get().getStoragePlan().getId() == storagePlan.getId()) {
-        throw new BadRequestException("You already have this plan");
+    // 2. ---- Check if user already has an active plan ----
+    Optional<UserPlan> optUserPlan = getCurrentUserPlanIfExists(user.getId());
+    if (optUserPlan.isPresent()) {
+      UserPlan userPlan = optUserPlan.get();
+      // 3. ---- Check if user has same plan ----
+      if (userPlan.getStoragePlan().getId() == userPlanRequestDTO.getStoragePlanId()) {
+        return userPlanMapper.entityToResponse(userPlan);
       }
-      UserPlan userPlan = currentPlan.get();
+      // 4. ---- Inactive current plan ----
       userPlan.setActive(false);
       userPlanRepository.save(userPlan);
     }
-    UserPlan userPlan = new UserPlan();
-    userPlan.setUser(user);
-    userPlan.setStoragePlan(storagePlan);
-    userPlan.setActive(true);
-    userPlan.setExpiredAt(Instant.now().plusSeconds(storagePlan.getTimeOfPlan() * 24 * 60 * 60));
-    userPlan.setAssignedAt(Instant.now());
-    return userPlanMapper.entityToResponse(userPlanRepository.save(userPlan));
+    // 5. ---- Create new user plan ----
+    UserPlan newUserPlan = new UserPlan();
+    newUserPlan.setUser(user);
+    newUserPlan.setStoragePlan(storagePlan);
+    newUserPlan.setExpiredAt(Instant.now().plusSeconds(storagePlan.getTimeOfPlan() * 24 * 60 * 60));
+    newUserPlan = userPlanRepository.save(newUserPlan);
+    return userPlanMapper.entityToResponse(newUserPlan);
   }
 
+  // ============================ GET CURRENT PLAN ============================
   @Override
   public UserPlanResponseDTO getCurrentPlan() {
-    return userPlanMapper.entityToResponse(getCurrentUserPlan());
+    Long userId = securityUtils.getCurrentUserId();
+    Optional<UserPlan> optUserPlan = getCurrentUserPlanIfExists(userId);
+    if (optUserPlan.isEmpty()) {
+      throw new ResourceNotFoundException("Current user does not have an active plan");
+    }
+    return userPlanMapper.entityToResponse(optUserPlan.get());
   }
 
+  // ============================ GET USER PLAN HISTORY ============================
   @Override
   public PageResponse<UserPlanResponseDTO> getUserPlanHistory(
       Specification<UserPlan> specification, Pageable pageable) {
     Long userId = securityUtils.getCurrentUserId();
-    Specification<UserPlan> spec =
-        (root, _, criteriaBuilder) -> criteriaBuilder.equal(root.get("user").get("id"), userId);
-    spec.and(specification);
-    Page<UserPlan> page = userPlanRepository.findAll(spec, pageable);
-    return new PageResponse<UserPlanResponseDTO>()
-        .setContent(
-            page.getContent().stream().map(v -> userPlanMapper.entityToResponse(v)).toList())
-        .setNumber(page.getNumber())
-        .setSize(page.getSize())
-        .setTotalElements(page.getTotalElements())
-        .setTotalPages(page.getTotalPages());
+    Specification<UserPlan> userPlanSpec =
+        (root, _, builder) -> builder.and(builder.equal(root.get("user").get("id"), userId));
+    userPlanSpec.and(specification);
+    Page<UserPlan> page = userPlanRepository.findAll(userPlanSpec, pageable);
+    return PageResponse.from(page.map(userPlanMapper::entityToResponse));
   }
 
+  // ============================ CANCEL CURRENT PLAN ============================
   @Override
   public void cancelCurrentPlan() {
-    UserPlan current = getCurrentUserPlan();
-    current.setActive(false);
-    userPlanRepository.save(current);
+    Long userId = securityUtils.getCurrentUserId();
+    Optional<UserPlan> optUserPlan = getCurrentUserPlanIfExists(userId);
+    if (optUserPlan.isEmpty()) {
+      throw new ResourceNotFoundException("Current user does not have an active plan");
+    }
+    UserPlan userPlan = optUserPlan.get();
+    userPlan.setActive(false);
+    userPlanRepository.save(userPlan);
   }
 
-  private UserPlan getCurrentUserPlan() {
-    Long userId = securityUtils.getCurrentUserId();
-    UserPlan current =
-        userPlanRepository
-            .findByUserIdAndIsActiveTrue(userId)
-            .orElseThrow(
-                () -> new BadRequestException("No active plan found for user with id: " + userId));
-    if (current.getExpiredAt().isBefore(Instant.now())) {
-      current.setActive(false);
-      userPlanRepository.save(current);
-      throw new BadRequestException("Your plan has expired");
+  public Optional<UserPlan> getCurrentUserPlanIfExists(Long userId) {
+    Optional<UserPlan> optUserPlan =
+        userPlanRepository.findOne(
+            (root, _, builder) ->
+                builder.and(
+                    builder.equal(root.get("user").get("id"), userId),
+                    builder.equal(root.get("isActive"), true)));
+    if (optUserPlan.isPresent() && optUserPlan.get().getExpiredAt().isBefore(Instant.now())) {
+      return Optional.empty();
     }
-    return current;
+    return optUserPlan;
   }
 }

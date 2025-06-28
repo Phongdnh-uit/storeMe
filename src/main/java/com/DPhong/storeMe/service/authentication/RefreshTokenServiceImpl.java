@@ -1,7 +1,8 @@
 package com.DPhong.storeMe.service.authentication;
 
 import com.DPhong.storeMe.entity.RefreshToken;
-import com.DPhong.storeMe.exception.BadRequestException;
+import com.DPhong.storeMe.enums.ErrorCode;
+import com.DPhong.storeMe.exception.AuthException;
 import com.DPhong.storeMe.exception.ResourceNotFoundException;
 import com.DPhong.storeMe.repository.RefreshTokenRepository;
 import com.DPhong.storeMe.repository.UserRepository;
@@ -44,7 +45,7 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     RefreshToken refreshToken = findByToken(token);
     if (refreshToken.getExpiratedAt().isBefore(Instant.now())) {
       deleteRefreshToken(refreshToken);
-      throw new BadRequestException("Refresh token expired. Please login again");
+      throw new AuthException(ErrorCode.TOKEN_EXPIRED);
     }
     return refreshToken;
   }

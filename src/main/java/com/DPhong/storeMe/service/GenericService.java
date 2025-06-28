@@ -24,6 +24,7 @@ public abstract class GenericService<E, I, O> implements CrudService<E, Long, I,
   protected final GenericMapper<E, I, O> mapper;
   protected final Class<E> entityClass;
 
+  // ============================ HELPER ============================
   /**
    * @param id the id of the entity to find
    * @return the entity with the given id
@@ -36,23 +37,20 @@ public abstract class GenericService<E, I, O> implements CrudService<E, Long, I,
             () -> new ResourceNotFoundException(entityClass.getSimpleName() + " not found"));
   }
 
+  // ============================ GET ALL ============================
   @Override
   public PageResponse<O> findAll(Specification<E> specification, Pageable pageable) {
     Page<E> page = repository.findAll(specification, pageable);
-    return new PageResponse<O>()
-        .setContent(page.getContent().stream().map(mapper::entityToResponse).toList())
-        .setNumber(page.getNumber())
-        .setSize(page.getSize())
-        .setTotalElements(page.getTotalElements())
-        .setTotalPages(page.getTotalPages());
+    return PageResponse.from(page.map(mapper::entityToResponse));
   }
 
+  // ============================ GET BY ID ============================
   @Override
   public O findById(Long id) {
     return mapper.entityToResponse(findByIdOrThrow(id));
   }
 
-  // ====================================CREATE==================================
+  // ============================ CREATE ============================
   protected void beforeCreateMapper(I request) {}
 
   @Override
@@ -66,7 +64,7 @@ public abstract class GenericService<E, I, O> implements CrudService<E, Long, I,
 
   protected void afterCreateMapper(I request, E entity) {}
 
-  // =====================================UPDATE================================
+  // ============================ UPDATE ============================
   /** This function will be call berore the update mapper. after check the entity is exists. */
   protected void beforeUpdateMapper(Long id, I request, E oldEntity) {}
 
@@ -82,14 +80,14 @@ public abstract class GenericService<E, I, O> implements CrudService<E, Long, I,
 
   protected void afterUpdateMapper(Long id, I request, E newEntity) {}
 
-  // =======================================DELETE================================
+  // ============================ DELETE ============================
   @Override
   public void delete(Long id) {
     E entity = findByIdOrThrow(id);
     repository.delete(entity);
   }
 
-  // ========================================DELETE-ALL===========================
+  // ============================ DELETE MANY ============================
   @Override
   public void deleteAllById(Iterable<Long> ids) {
     List<E> entities = repository.findAllById(ids);

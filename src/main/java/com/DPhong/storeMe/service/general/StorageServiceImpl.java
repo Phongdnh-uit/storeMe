@@ -1,5 +1,6 @@
 package com.DPhong.storeMe.service.general;
 
+import com.DPhong.storeMe.enums.ErrorCode;
 import com.DPhong.storeMe.exception.StorageException;
 import jakarta.annotation.PostConstruct;
 import java.io.IOException;
@@ -40,20 +41,21 @@ public class StorageServiceImpl implements StorageService {
       try {
         Files.createDirectories(rootPath);
         return;
-      } catch (IOException e) {
-        throw new StorageException("Could not initialize storage location", e);
-      } catch (SecurityException e) {
-        throw new StorageException("Storage location is not accessible", e);
+      } catch (Exception e) {
+        throw new StorageException(
+            ErrorCode.BLOB_SERVICE_UNAVAILABLE, "Không thể khởi tạo thư mục lưu trữ");
       }
     }
 
     // If the root path exists, check if it is a directory and writable
     if (!Files.isDirectory(rootPath)) {
-      throw new StorageException("Storage location is not a directory");
+      throw new StorageException(
+          ErrorCode.BLOB_SERVICE_UNAVAILABLE, "Thư mục lưu trữ không phải là một thư mục");
     }
 
     if (!Files.isWritable(rootPath)) {
-      throw new StorageException("Storage location is not writable");
+      throw new StorageException(
+          ErrorCode.BLOB_SERVICE_UNAVAILABLE, "Thư mục lưu trữ không có quyền ghi");
     }
   }
 
@@ -82,7 +84,7 @@ public class StorageServiceImpl implements StorageService {
   @Override
   public String storeFile(String path, MultipartFile file) {
     if (file == null || file.isEmpty()) {
-      throw new StorageException("Failed to store empty file.");
+      throw new StorageException(ErrorCode.FILE_WRITE_FAILED, "File bị rỗng hoặc không hợp lệ");
     }
     try {
       // Sanitize the path to ensure it is within the root storage location
@@ -93,7 +95,7 @@ public class StorageServiceImpl implements StorageService {
       }
       return rootPath.relativize(targetPath).toString();
     } catch (Exception e) {
-      throw new StorageException("Failed to store file " + file.getOriginalFilename(), e);
+      throw new StorageException(ErrorCode.FILE_WRITE_FAILED);
     }
   }
 
@@ -113,7 +115,7 @@ public class StorageServiceImpl implements StorageService {
     Path targetLocation = sanitizePath(targetPath);
 
     if (Files.notExists(sourceLocation)) {
-      throw new StorageException("Source file does not exist: " + sourcePath);
+      throw new StorageException(ErrorCode.FILE_NOT_FOUND);
     }
 
     try {
@@ -122,7 +124,7 @@ public class StorageServiceImpl implements StorageService {
       Files.copy(sourceLocation, targetLocation, StandardCopyOption.REPLACE_EXISTING);
       return rootPath.relativize(targetLocation).toString();
     } catch (IOException e) {
-      throw new StorageException("Failed to copy file from " + sourcePath + " to " + targetPath, e);
+      throw new StorageException(ErrorCode.FILE_WRITE_FAILED);
     }
   }
 
@@ -139,17 +141,17 @@ public class StorageServiceImpl implements StorageService {
   public Resource loadFileAsResource(String path) {
     Path targetLocation = sanitizePath(path);
     if (Files.notExists(targetLocation)) {
-      throw new StorageException("File does not exist");
+      throw new StorageException(ErrorCode.FILE_NOT_FOUND);
     }
     try {
       Resource resource = new UrlResource(targetLocation.toUri());
       if (resource.exists() || resource.isReadable()) {
         return resource;
       } else {
-        throw new StorageException("Could not read file");
+        throw new StorageException(ErrorCode.FILE_ACCESS_DENIED);
       }
     } catch (MalformedURLException e) {
-      throw new StorageException("Failed to load file", e);
+      throw new StorageException(ErrorCode.FILE_PATH_INVALID);
     }
   }
 
@@ -165,12 +167,12 @@ public class StorageServiceImpl implements StorageService {
   public void deleteFile(String path) {
     Path targetLocation = sanitizePath(path);
     if (Files.notExists(targetLocation)) {
-      throw new StorageException("File does not exist");
+      throw new StorageException(ErrorCode.FILE_NOT_FOUND);
     }
     try {
       Files.delete(targetLocation);
     } catch (Exception e) {
-      throw new StorageException("Failed to delete file");
+      throw new StorageException(ErrorCode.FILE_DELETE_FAILED);
     }
   }
 
@@ -179,7 +181,7 @@ public class StorageServiceImpl implements StorageService {
   private Path sanitizePath(String path) {
     Path resolvedPath = rootPath.resolve(path).normalize();
     if (!resolvedPath.startsWith(rootPath)) {
-      throw new StorageException("Invalid path: Attempt to access outside root directory");
+      throw new StorageException(ErrorCode.FILE_PATH_INVALID);
     }
     return resolvedPath;
   }

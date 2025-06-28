@@ -9,14 +9,21 @@ import lombok.Setter;
 @Getter
 @Setter
 public class FSResponseDTO extends BaseEntity {
-
   private String name;
 
   private Long userId;
 
-  private Long size;
+  private Long size = 0L;
 
   private List<Long> ancestor;
+
+  private Long parentId;
+
+  private boolean isHidden = false;
+
+  private boolean isLocked = false;
+
+  private Instant lastAccessed;
 
   private Instant deletedAt;
 }

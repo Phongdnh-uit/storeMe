@@ -1,15 +1,11 @@
 package com.DPhong.storeMe.config;
 
-import com.DPhong.storeMe.constant.FolderConstant;
 import com.DPhong.storeMe.dto.authentication.AuthResponseDTO;
-import com.DPhong.storeMe.entity.Folder;
 import com.DPhong.storeMe.entity.User;
-import com.DPhong.storeMe.enums.FolderType;
 import com.DPhong.storeMe.enums.LoginProvider;
 import com.DPhong.storeMe.enums.RoleName;
 import com.DPhong.storeMe.enums.UserStatus;
 import com.DPhong.storeMe.exception.ResourceNotFoundException;
-import com.DPhong.storeMe.repository.FolderRepository;
 import com.DPhong.storeMe.repository.RoleRepository;
 import com.DPhong.storeMe.repository.UserRepository;
 import com.DPhong.storeMe.security.TokenProvider;
@@ -34,7 +30,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccessHandler {
 
   private final UserRepository userRepository;
-  private final FolderRepository folderRepository;
   private final RoleRepository roleRepository;
   private final TokenProvider tokenProvider;
   private final RefreshTokenService refreshTokenService;
@@ -65,8 +60,6 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
       userFromDatabase.setTotalUsage(0L);
       userFromDatabase = userRepository.save(userFromDatabase);
 
-      initializeFolder(userFromDatabase);
-
     } else {
       userFromDatabase = userOptional.get();
       if (userFromDatabase.getLoginProvider() != LoginProvider.GOOGLE) {
@@ -82,31 +75,5 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
         new AuthResponseDTO().setAccessToken(accessToken).setRefreshToken(refreshToken);
 
     new ObjectMapper().writeValue(response.getWriter(), authResponseDTO);
-  }
-
-  private void initializeFolder(User user) {
-    // Create the root folder for the user
-    Folder userRootFolder = new Folder();
-    userRootFolder.setUser(user);
-    userRootFolder.setName(FolderConstant.USER_ROOT);
-    userRootFolder.setType(FolderType.USERROOT);
-    userRootFolder.setLocked(true);
-    folderRepository.save(userRootFolder);
-
-    // Create the trash folder for the user
-    Folder trashFolder = new Folder();
-    trashFolder.setUser(user);
-    trashFolder.setName(FolderConstant.TRASH);
-    trashFolder.setType(FolderType.TRASH);
-    trashFolder.setLocked(true);
-    folderRepository.save(trashFolder);
-
-    // Create the shared folder for the user
-    Folder sharedFolder = new Folder();
-    sharedFolder.setUser(user);
-    sharedFolder.setName(FolderConstant.SHARED);
-    sharedFolder.setType(FolderType.SHARED);
-    sharedFolder.setLocked(true);
-    folderRepository.save(sharedFolder);
   }
 }

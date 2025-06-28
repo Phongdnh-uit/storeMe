@@ -16,7 +16,5 @@ public class UserPlanResponseDTO extends BaseEntity {
 
   private StoragePlanResponseDTO storagePlan;
 
-  private Instant assignedAt;
-
   private Instant expiredAt;
 }

@@ -34,7 +34,7 @@ public class User extends BaseEntity {
   private String passwordHash;
 
   @Column(nullable = false)
-  private Long totalUsage;
+  private Long totalUsage = 0L;
 
   @Column(nullable = false)
   @Enumerated(EnumType.STRING)
@@ -50,11 +50,8 @@ public class User extends BaseEntity {
   @OneToMany(mappedBy = "user")
   private List<RefreshToken> refreshTokens = new ArrayList<>();
 
-  @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-  private List<Folder> folders = new ArrayList<>();
-
   @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true)
-  private List<File> files = new ArrayList<>();
+  private List<FSNode> fsNodes = new ArrayList<>();
 
   @OneToMany(mappedBy = "user", cascade = CascadeType.REMOVE, orphanRemoval = true)
   private List<UserPlan> userPlans = new ArrayList<>();

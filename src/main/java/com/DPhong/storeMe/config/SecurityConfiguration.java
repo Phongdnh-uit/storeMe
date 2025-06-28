@@ -2,6 +2,7 @@ package com.DPhong.storeMe.config;
 
 import com.DPhong.storeMe.constant.AppConstant;
 import com.DPhong.storeMe.enums.RoleName;
+import com.DPhong.storeMe.security.EnsureUserExistsFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,6 +12,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 
 @RequiredArgsConstructor
@@ -43,7 +45,10 @@ public class SecurityConfiguration {
 
   @Bean
   SecurityFilterChain securityFilterChain(
-      HttpSecurity http, JwtAuthenticationConverter jwtAuthenticationConverter) throws Exception {
+      HttpSecurity http,
+      JwtAuthenticationConverter jwtAuthenticationConverter,
+      EnsureUserExistsFilter ensureUserExistsFilter)
+      throws Exception {
     http.csrf(AbstractHttpConfigurer::disable)
         .authorizeHttpRequests(
             auth ->
@@ -55,6 +60,7 @@ public class SecurityConfiguration {
                     .authenticated())
         .oauth2ResourceServer(
             oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter)))
+        .addFilterAfter(ensureUserExistsFilter, BearerTokenAuthenticationFilter.class)
         .formLogin(AbstractHttpConfigurer::disable)
         .oauth2Login(
             oauth2 ->

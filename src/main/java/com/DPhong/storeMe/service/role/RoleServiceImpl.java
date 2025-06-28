@@ -1,5 +1,6 @@
 package com.DPhong.storeMe.service.role;
 
+import com.DPhong.storeMe.dto.FieldError;
 import com.DPhong.storeMe.dto.role.RoleRequestDTO;
 import com.DPhong.storeMe.dto.role.RoleResponseDTO;
 import com.DPhong.storeMe.entity.Role;
@@ -10,7 +11,8 @@ import com.DPhong.storeMe.mapper.RoleMapper;
 import com.DPhong.storeMe.repository.RoleRepository;
 import com.DPhong.storeMe.repository.UserRepository;
 import com.DPhong.storeMe.service.GenericService;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -28,7 +30,9 @@ public class RoleServiceImpl extends GenericService<Role, RoleRequestDTO, RoleRe
   @Override
   protected void beforeCreateMapper(RoleRequestDTO request) {
     if (((RoleRepository) repository).existsByName(request.getName())) {
-      throw new DataConflictException("Role already exists", Map.of("name", request.getName()));
+      List<FieldError> fieldErrors = new ArrayList<>();
+      fieldErrors.add(FieldError.from("name", "đã tồn tại"));
+      throw new DataConflictException(fieldErrors);
     }
   }
 
@@ -36,7 +40,9 @@ public class RoleServiceImpl extends GenericService<Role, RoleRequestDTO, RoleRe
   protected void beforeUpdateMapper(Long id, RoleRequestDTO request, Role oldEntity) {
     if (!oldEntity.getName().equals(request.getName())
         && ((RoleRepository) repository).existsByName(request.getName())) {
-      throw new DataConflictException("Role already exists", Map.of("name", request.getName()));
+      List<FieldError> fieldErrors = new ArrayList<>();
+      fieldErrors.add(FieldError.from("name", "đã tồn tại"));
+      throw new DataConflictException(fieldErrors);
     }
   }
 

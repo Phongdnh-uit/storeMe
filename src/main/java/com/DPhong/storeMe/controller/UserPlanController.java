@@ -9,6 +9,7 @@ import com.DPhong.storeMe.entity.UserPlan;
 import com.DPhong.storeMe.service.userPlan.UserPlanService;
 import com.turkraft.springfilter.boot.Filter;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -59,7 +60,14 @@ public class UserPlanController {
               + " dùng hiện tại.")
   @GetMapping("/history")
   public ResponseEntity<ApiResponse<PageResponse<UserPlanResponseDTO>>> getUserPlanHistory(
-      @ParameterObject Pageable pageable, @Filter Specification<UserPlan> specification) {
+      @ParameterObject Pageable pageable,
+      @Parameter(
+              name = "filter",
+              description = "Bộ lọc thông qua cú pháp truy vấn turkraft/springfilter",
+              example = "name~'abc'",
+              required = false)
+          @Filter
+          Specification<UserPlan> specification) {
     return ResponseEntity.ok(
         ApiResponse.success(userPlanService.getUserPlanHistory(specification, pageable)));
   }

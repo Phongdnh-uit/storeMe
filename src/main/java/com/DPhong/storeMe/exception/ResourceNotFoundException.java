@@ -1,13 +1,24 @@
 package com.DPhong.storeMe.exception;
 
-public class ResourceNotFoundException extends RuntimeException {
-  private static final long serialVersionUID = 1L;
+import com.DPhong.storeMe.dto.FieldError;
+import com.DPhong.storeMe.enums.ErrorCode;
+import java.util.List;
 
-  public ResourceNotFoundException(String message) {
-    super(message);
+public class ResourceNotFoundException extends ApiException {
+
+  public ResourceNotFoundException() {
+    super(ErrorCode.RESOURCE_NOT_FOUND);
   }
 
-  public ResourceNotFoundException(String message, Throwable cause) {
-    super(message, cause);
+  public ResourceNotFoundException(String customMessage) {
+    super(ErrorCode.RESOURCE_NOT_FOUND, customMessage);
+  }
+
+  public ResourceNotFoundException(List<FieldError> fieldErrors) {
+    super(ErrorCode.RESOURCE_NOT_FOUND, fieldErrors);
+  }
+
+  public ResourceNotFoundException(String customMessage, List<FieldError> fieldErrors) {
+    super(ErrorCode.RESOURCE_NOT_FOUND, customMessage, fieldErrors);
   }
 }

@@ -15,6 +15,7 @@ public class StoragePlanRequestDTO {
   @NotNull(message = "Price is required")
   private Double price;
 
+  @NotNull(message = "Time of plan is required")
   private Long timeOfPlan;
 
   @NotNull(message = "Storage limit is required")
