@@ -46,6 +46,7 @@ public class SecurityConfiguration {
   @Bean
   SecurityFilterChain securityFilterChain(
       HttpSecurity http,
+      CustomAuthenticationEntryPoint authenticationEntryPoint,
       JwtAuthenticationConverter jwtAuthenticationConverter,
       EnsureUserExistsFilter ensureUserExistsFilter)
       throws Exception {
@@ -59,7 +60,10 @@ public class SecurityConfiguration {
                     .anyRequest()
                     .authenticated())
         .oauth2ResourceServer(
-            oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter)))
+            oauth2 ->
+                oauth2
+                    .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter))
+                    .authenticationEntryPoint(authenticationEntryPoint))
         .addFilterAfter(ensureUserExistsFilter, BearerTokenAuthenticationFilter.class)
         .formLogin(AbstractHttpConfigurer::disable)
         .oauth2Login(
