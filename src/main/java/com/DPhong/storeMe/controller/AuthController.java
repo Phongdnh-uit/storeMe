@@ -7,6 +7,7 @@ import com.DPhong.storeMe.dto.authentication.ChangePasswordRequestDTO;
 import com.DPhong.storeMe.dto.authentication.LoginRequestDTO;
 import com.DPhong.storeMe.dto.authentication.RefreshTokenRequestDTO;
 import com.DPhong.storeMe.dto.authentication.RegisterRequestDTO;
+import com.DPhong.storeMe.dto.authentication.ResetPasswordRequestDTO;
 import com.DPhong.storeMe.dto.user.UserResponseDTO;
 import com.DPhong.storeMe.service.authentication.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -70,14 +71,17 @@ public class AuthController {
 
   @Operation(summary = "Gửi email quên mật khẩu")
   @PostMapping("/forgot-password")
-  public String forgotPassword() {
-    return "forgot-password";
+  public ResponseEntity<ApiResponse<Void>> forgotPassword(@RequestParam("email") String email) {
+    authService.sendForgotPasswordEmail(email);
+    return ResponseEntity.ok(ApiResponse.success(null));
   }
 
   @Operation(summary = "Đặt lại mật khẩu sau khi quên")
   @PostMapping("/reset-password")
-  public String resetPassword() {
-    return "reset-password";
+  public ResponseEntity<ApiResponse<Void>> resetPassword(
+      @Valid @RequestBody ResetPasswordRequestDTO resetPasswordRequestDTO) {
+    authService.resetPassword(resetPasswordRequestDTO);
+    return ResponseEntity.ok(ApiResponse.success(null));
   }
 
   @Operation(summary = "Đăng xuất tài khoản")

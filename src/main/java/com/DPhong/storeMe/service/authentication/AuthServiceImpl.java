@@ -5,11 +5,14 @@ import com.DPhong.storeMe.dto.authentication.ChangePasswordRequestDTO;
 import com.DPhong.storeMe.dto.authentication.LoginRequestDTO;
 import com.DPhong.storeMe.dto.authentication.RefreshTokenRequestDTO;
 import com.DPhong.storeMe.dto.authentication.RegisterRequestDTO;
+import com.DPhong.storeMe.dto.authentication.ResetPasswordRequestDTO;
 import com.DPhong.storeMe.dto.user.UserResponseDTO;
 import com.DPhong.storeMe.entity.RefreshToken;
+import com.DPhong.storeMe.entity.User;
 import com.DPhong.storeMe.entity.Verification;
 import com.DPhong.storeMe.enums.UserStatus;
 import com.DPhong.storeMe.enums.VerificationType;
+import com.DPhong.storeMe.repository.UserRepository;
 import com.DPhong.storeMe.security.SecurityUtils;
 import com.DPhong.storeMe.security.TokenProvider;
 import com.DPhong.storeMe.service.general.MailService;
@@ -19,6 +22,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
@@ -27,11 +31,13 @@ public class AuthServiceImpl implements AuthService {
 
   private final RefreshTokenService refreshTokenService;
   private final TokenProvider tokenProvider;
+  private final UserRepository userRepository;
   private final MailService mailService;
   private final VerificationService verificationService;
   private final UserService userService;
   private final AuthenticationManagerBuilder authenticationManagerBuilder;
   private final SecurityUtils securityUtils;
+  private final PasswordEncoder passwordEncoder;
 
   // ============================ REGISTER USER ============================
   @Override
@@ -139,5 +145,40 @@ public class AuthServiceImpl implements AuthService {
         .forEach(verificationService::deleteVerification);
     mailService.sendActivationEmail(
         verification.getUser().getEmail(), userId, verification.getCode());
+  }
+
+  // ============================ SEND FORGOT PASSWORD EMAIL ============================
+  @Override
+  public void sendForgotPasswordEmail(String email) {
+    // 1. ---- Create new verification ----
+    User user =
+        userRepository
+            .findByEmail(email)
+            .orElseThrow(() -> new IllegalArgumentException("User not found with email: " + email));
+    Verification verification =
+        verificationService.createVerification(user.getId(), VerificationType.FORGOT_PASSWORD);
+    // 2. ---- Delete old if exists ----
+    user.getVerifications().stream()
+        .filter(
+            v ->
+                v.getType() == VerificationType.FORGOT_PASSWORD
+                    && v.getId() != verification.getId())
+        .forEach(verificationService::deleteVerification);
+    mailService.sendForgotPasswordEmail(
+        verification.getUser().getEmail(), verification.getUser().getId(), verification.getCode());
+  }
+
+  // ============================ RESET PASSWORD ============================
+  @Override
+  public void resetPassword(ResetPasswordRequestDTO resetPasswordRequestDTO) {
+    Verification verification =
+        verificationService.verifyCode(
+            resetPasswordRequestDTO.getUserId(),
+            resetPasswordRequestDTO.getCode(),
+            VerificationType.FORGOT_PASSWORD);
+    User user = verification.getUser();
+    user.setPasswordHash(passwordEncoder.encode(resetPasswordRequestDTO.getNewPassword()));
+    userRepository.save(user);
+    verificationService.deleteVerification(verification);
   }
 }
