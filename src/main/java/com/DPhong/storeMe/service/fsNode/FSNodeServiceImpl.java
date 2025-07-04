@@ -328,56 +328,6 @@ public class FSNodeServiceImpl implements FSNodeService {
     repository.saveAll(subNodes);
   }
 
-  // ============================ DELETE MANY ITEMS ============================
-  @Transactional
-  @Override
-  public void deleteMany(List<Long> ids) {
-    // 1. ---- Get current user id ----
-    Long userId = securityUtils.getCurrentUserId();
-    // 2. ---- Find all items by ids and userId ----
-    List<FSNode> items =
-        repository.findAll(
-            (root, _, builder) ->
-                builder.and(
-                    root.get("id").in(ids),
-                    builder.equal(root.get("user").get("id"), userId),
-                    builder.isNull(root.get("deletedAt"))));
-    // 3. ---- Check if all items exist ----
-    if (items.size() != ids.size()) {
-      throw new ResourceNotFoundException("Some items not found or do not belong to current user.");
-    }
-    // 4. ---- Check if child node include ----
-    Set<Long> idSet = new HashSet<>(ids);
-    items.removeIf(item -> item.getAncestor().stream().anyMatch(idSet::contains));
-    // 5. ---- Set deletedAt for each item ----
-    Instant now = Instant.now();
-    items.forEach(
-        item -> {
-          item.setDeletedAt(now);
-          item.setLastAccessed(now);
-          // Set parent to null to make it a root item in trash
-          item.setParent(null);
-          // Keep ancestor unchanged for rolling back, due to set parent to null
-        });
-    // 6. ---- Save all items ----
-    repository.saveAll(items);
-    // 7. ---- Delete sub node ----
-    List<FSNode> subNodes =
-        repository.findAll(
-            (root, _, builder) ->
-                builder.and(
-                    root.get("ancestor").in(ids),
-                    builder.equal(root.get("user").get("id"), userId),
-                    builder.isNull(root.get("deletedAt"))));
-    subNodes.stream()
-        .forEach(
-            subNode -> {
-              subNode.setDeletedAt(now);
-              subNode.setLastAccessed(now);
-            });
-    repository.saveAll(subNodes);
-  }
-
   // ============================ GET TRASH ============================
   @Override
   public PageResponse<FSResponseDTO> getTrash(Specification<FSNode> spec, Pageable pageable) {
@@ -426,6 +376,74 @@ public class FSNodeServiceImpl implements FSNodeService {
     fsNode.setDeletedAt(null);
     fsNode.setLastAccessed(Instant.now());
     repository.save(fsNode);
+  }
+
+  // ============================ DELETE PERMANENTLY ============================
+  @Transactional
+  @Override
+  public void deletePermanently(Long id) {
+    // 1. ---- Get current user id ----
+    Long userId = securityUtils.getCurrentUserId();
+    // 2. ---- Find item by id and userId ----
+    FSNode fsNode =
+        repository
+            .findOne(
+                (root, _, builder) ->
+                    builder.and(
+                        builder.equal(root.get("id"), id),
+                        builder.equal(root.get("user").get("id"), userId),
+                        builder.isNotNull(root.get("deletedAt"))))
+            .orElseThrow(
+                () ->
+                    new ResourceNotFoundException(
+                        "Item not found or does not belong to current user."));
+    User user = fsNode.getUser();
+    // 3. ---- Delete file metadata if exists ----
+    if (fsNode.getFileMetadata() != null) {
+      fileMetadataRepository.delete(fsNode.getFileMetadata());
+      String blobKey = fsNode.getFileMetadata().getBlobKey();
+      String path = generateBlobPath(blobKey);
+      storageService.deleteFile(path);
+      //  4. ---- Update usage ----
+      user.setTotalUsage(user.getTotalUsage() - fsNode.getSize());
+    }
+    // 5. ---- Delete item from repository ----
+    repository.delete(fsNode);
+
+    // 6. ---- Check if item has sub-nodes and delete them permanently ----
+    List<FSNode> subNodes =
+        repository.findAll(
+            (root, _, builder) -> {
+              Expression<Integer> pos =
+                  builder.function(
+                      "array_position",
+                      Integer.class,
+                      root.get("ancestor"),
+                      builder.literal(fsNode.getId()));
+              return builder.and(
+                  builder.greaterThan(pos, 0),
+                  builder.equal(root.get("user").get("id"), securityUtils.getCurrentUserId()),
+                  builder.isNotNull(root.get("deletedAt")));
+            });
+
+    // 7. ---- Delete sub-nodes and their file metadata if exists ----
+    List<FileMetadata> metadataList = new ArrayList<>();
+    for (FSNode subNode : subNodes) {
+      // Delete file metadata if exists
+      if (subNode.getFileMetadata() != null) {
+        fileMetadataRepository.delete(subNode.getFileMetadata());
+        String blobKey = subNode.getFileMetadata().getBlobKey();
+        String path = generateBlobPath(blobKey);
+        storageService.deleteFile(path);
+        // 8. ---- Update usage ----
+        user.setTotalUsage(user.getTotalUsage() - subNode.getSize());
+        metadataList.add(subNode.getFileMetadata());
+      }
+    }
+    // 9. ---- Delete sub-nodes from repository ----
+    repository.deleteAll(subNodes);
+    fileMetadataRepository.deleteAll(metadataList);
+    userRepository.save(user);
   }
 
   // ============================ HELPER METHODS ============================

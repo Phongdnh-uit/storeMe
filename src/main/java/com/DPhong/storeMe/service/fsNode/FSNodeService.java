@@ -27,9 +27,9 @@ public interface FSNodeService {
 
   void delete(Long id);
 
-  void deleteMany(List<Long> ids);
-
   PageResponse<FSResponseDTO> getTrash(Specification<FSNode> spec, Pageable pageable);
 
   void restore(Long id);
+
+  void deletePermanently(Long id);
 }

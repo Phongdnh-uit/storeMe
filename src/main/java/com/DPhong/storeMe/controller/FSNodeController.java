@@ -100,13 +100,6 @@ public class FSNodeController {
     return ResponseEntity.ok(ApiResponse.success(null));
   }
 
-  @Operation(summary = "Xoá nhiều node trong hệ thống file")
-  @DeleteMapping
-  public ResponseEntity<ApiResponse<Void>> deleteNodes(@RequestParam("ids") List<Long> ids) {
-    fsNodeService.deleteMany(ids);
-    return ResponseEntity.ok(ApiResponse.success(null));
-  }
-
   @Operation(summary = "Lấy danh sách các node đã xoá trong hệ thống file")
   @GetMapping("/trash")
   public ResponseEntity<ApiResponse<PageResponse<FSResponseDTO>>> getTrash(
@@ -126,6 +119,13 @@ public class FSNodeController {
   @PostMapping("/trash/restore/{id}")
   public ResponseEntity<ApiResponse<Void>> restoreNode(@PathVariable("id") Long id) {
     fsNodeService.restore(id);
+    return ResponseEntity.ok(ApiResponse.success(null));
+  }
+
+  @Operation(summary = "Xoá node khỏi thùng rác trong hệ thống file")
+  @DeleteMapping("/trash/{id}")
+  public ResponseEntity<ApiResponse<Void>> deletePermanently(@PathVariable("id") Long id) {
+    fsNodeService.deletePermanently(id);
     return ResponseEntity.ok(ApiResponse.success(null));
   }
 }
