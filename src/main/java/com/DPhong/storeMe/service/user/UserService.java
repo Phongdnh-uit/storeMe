@@ -7,7 +7,7 @@ import com.DPhong.storeMe.enums.UserStatus;
 
 public interface UserService {
 
-  UserResponseDTO getCurrentAccount();
+  UserResponseDTO getCurrent();
 
   UserResponseDTO registerUser(RegisterRequestDTO registerRequestDTO);
 

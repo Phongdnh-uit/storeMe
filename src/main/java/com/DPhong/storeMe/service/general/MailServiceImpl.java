@@ -1,5 +1,6 @@
 package com.DPhong.storeMe.service.general;
 
+import com.DPhong.storeMe.constant.AppConstant;
 import jakarta.mail.internet.MimeMessage;
 import java.text.MessageFormat;
 import java.util.Map;
@@ -60,11 +61,23 @@ public class MailServiceImpl implements MailService {
 
     String activationLink =
         MessageFormat.format(
-            "http://localhost:8080/api/v1/auth/verify-email?userId={0}&code={1}", userId, code);
+            AppConstant.BACKEND_URL + "/auth/verify-email?userId={0}&code={1}", userId, code);
 
     String subject = "Xác thực tài khoản StoreMe";
     String templateName = "activationEmail";
     Map<String, Object> model = Map.of("activationLink", activationLink);
+    sendEmailFromTemplate(to, subject, templateName, model);
+  }
+
+  @Override
+  public void sendForgotPasswordEmail(String to, Long userId, String code) {
+    String resetPasswordLink =
+        MessageFormat.format(
+            AppConstant.FRONTEND_URL + "/auth/reset-password?userId={0}&code={1}", userId, code);
+
+    String subject = "Yêu cầu đặt lại mật khẩu StoreMe";
+    String templateName = "forgotPasswordEmail";
+    Map<String, Object> model = Map.of("resetPasswordLink", resetPasswordLink);
     sendEmailFromTemplate(to, subject, templateName, model);
   }
 }

@@ -71,8 +71,9 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
     String refreshToken =
         refreshTokenService.generateRefreshToken(userFromDatabase.getId()).getToken();
 
-    AuthResponseDTO authResponseDTO =
-        new AuthResponseDTO().setAccessToken(accessToken).setRefreshToken(refreshToken);
+    AuthResponseDTO authResponseDTO = new AuthResponseDTO();
+    authResponseDTO.setAccessToken(accessToken);
+    authResponseDTO.setRefreshToken(refreshToken);
 
     new ObjectMapper().writeValue(response.getWriter(), authResponseDTO);
   }

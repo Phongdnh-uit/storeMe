@@ -10,4 +10,6 @@ public interface MailService {
       String to, String subject, String templateName, Map<String, Object> model);
 
   void sendActivationEmail(String to, Long userId, String code);
+
+  void sendForgotPasswordEmail(String to, Long userId, String code);
 }
