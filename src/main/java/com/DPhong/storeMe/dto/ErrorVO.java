@@ -14,6 +14,6 @@ import lombok.Setter;
 @NoArgsConstructor
 public class ErrorVO {
   private String errorMessage;
-  private String errorCode;
+  private Integer errorCode;
   private List<FieldError> fieldErrors;
 }

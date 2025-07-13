@@ -3,62 +3,66 @@ package com.DPhong.storeMe.enums;
 import java.util.Arrays;
 import java.util.Optional;
 import lombok.Getter;
+import org.springframework.http.HttpStatus;
 
 @Getter
 public enum ErrorCode {
+
   // ==== 1xxx - AUTH ====
-  AUTH_FAILED("AUTH_FAILED", 1001, "Đăng nhập thất bại"),
-  TOKEN_EXPIRED("TOKEN_EXPIRED", 1002, "Token đã hết hạn"),
-  INVALID_TOKEN("INVALID_TOKEN", 1003, "Token không hợp lệ"),
-  ACCESS_DENIED("ACCESS_DENIED", 1004, "Truy cập bị từ chối"),
+  AUTH_FAILED(1001, "Đăng nhập thất bại", HttpStatus.UNAUTHORIZED.value()),
+  TOKEN_EXPIRED(1002, "Token đã hết hạn", HttpStatus.UNAUTHORIZED.value()),
+  INVALID_TOKEN(1003, "Token không hợp lệ", HttpStatus.UNAUTHORIZED.value()),
+  ACCESS_DENIED(1004, "Truy cập bị từ chối", HttpStatus.FORBIDDEN.value()),
   LOGIN_PROVIDER_NOT_SUPPORTED(
-      "LOGIN_PROVIDER_NOT_SUPPORTED", 1005, "Nhà cung cấp đăng nhập không được hỗ trợ"),
-  INVALID_CREDENTIALS("INVALID_CREDENTIALS", 1006, "Thông tin đăng nhập không hợp lệ"),
+      1005, "Nhà cung cấp đăng nhập không được hỗ trợ", HttpStatus.BAD_REQUEST.value()),
+  INVALID_CREDENTIALS(1006, "Thông tin đăng nhập không hợp lệ", HttpStatus.BAD_REQUEST.value()),
 
   // ==== 2xxx - USER ====
-  USER_NOT_FOUND("USER_NOT_FOUND", 2001, "Người dùng không tồn tại"),
-  USER_ALREADY_EXISTS("USER_ALREADY_EXISTS", 2002, "Người dùng đã tồn tại"),
-  USER_DISABLED("USER_DISABLED", 2003, "Tài khoản bị vô hiệu hóa"),
-  USER_UNVERIFIED("USER_UNVERIFIED", 2004, "Tài khoản chưa xác minh"),
+  USER_NOT_FOUND(2001, "Người dùng không tồn tại", HttpStatus.NOT_FOUND.value()),
+  USER_ALREADY_EXISTS(2002, "Người dùng đã tồn tại", HttpStatus.CONFLICT.value()),
+  USER_DISABLED(2003, "Tài khoản bị vô hiệu hóa", HttpStatus.FORBIDDEN.value()),
+  USER_UNVERIFIED(2004, "Tài khoản chưa xác minh", HttpStatus.FORBIDDEN.value()),
 
   // ==== 8xxx - BLOB STORAGE / FILE / FOLDER ====
-  FILE_NOT_FOUND("FILE_NOT_FOUND", 8001, "Không tìm thấy tệp"),
-  FILE_UPLOAD_FAILED("FILE_UPLOAD_FAILED", 8002, "Tải tệp lên thất bại"),
-  FILE_DELETE_FAILED("FILE_DELETE_FAILED", 8003, "Xóa tệp thất bại"),
-  FILE_TOO_LARGE("FILE_TOO_LARGE", 8004, "Kích thước tệp vượt quá giới hạn cho phép"),
-  FILE_TYPE_NOT_SUPPORTED("FILE_TYPE_NOT_SUPPORTED", 8005, "Định dạng tệp không được hỗ trợ"),
-  FILE_ACCESS_DENIED("FILE_ACCESS_DENIED", 8006, "Không có quyền truy cập tệp"),
-  FILE_READ_FAILED("FILE_READ_FAILED", 8007, "Đọc tệp thất bại"),
-  FILE_WRITE_FAILED("FILE_WRITE_FAILED", 8008, "Ghi tệp thất bại"),
+  FILE_NOT_FOUND(8001, "Không tìm thấy tệp", HttpStatus.NOT_FOUND.value()),
+  FILE_UPLOAD_FAILED(8002, "Tải tệp lên thất bại", HttpStatus.INTERNAL_SERVER_ERROR.value()),
+  FILE_DELETE_FAILED(8003, "Xóa tệp thất bại", HttpStatus.INTERNAL_SERVER_ERROR.value()),
+  FILE_TOO_LARGE(
+      8004, "Kích thước tệp vượt quá giới hạn cho phép", HttpStatus.PAYLOAD_TOO_LARGE.value()),
+  FILE_TYPE_NOT_SUPPORTED(
+      8005, "Định dạng tệp không được hỗ trợ", HttpStatus.UNSUPPORTED_MEDIA_TYPE.value()),
+  FILE_ACCESS_DENIED(8006, "Không có quyền truy cập tệp", HttpStatus.FORBIDDEN.value()),
+  FILE_READ_FAILED(8007, "Đọc tệp thất bại", HttpStatus.INTERNAL_SERVER_ERROR.value()),
+  FILE_WRITE_FAILED(8008, "Ghi tệp thất bại", HttpStatus.INTERNAL_SERVER_ERROR.value()),
   BLOB_SERVICE_UNAVAILABLE(
-      "BLOB_SERVICE_UNAVAILABLE", 8009, "Dịch vụ lưu trữ tạm thời không khả dụng"),
-  FILE_PATH_INVALID("FILE_PATH_INVALID", 8010, "Đường dẫn tệp không hợp lệ"),
-  FILE_NAME_CONFLICT("FILE_NAME_CONFLICT", 8011, "Tệp cùng tên đã tồn tại"),
-  CYCLIC_FILE_DETECTED("CYCLIC_FILE_DETECTED", 8012, "Phát hiện vòng lặp trong cấu trúc thư mục"),
+      8009, "Dịch vụ lưu trữ tạm thời không khả dụng", HttpStatus.INTERNAL_SERVER_ERROR.value()),
+  FILE_PATH_INVALID(8010, "Đường dẫn tệp không hợp lệ", HttpStatus.BAD_REQUEST.value()),
+  FILE_NAME_CONFLICT(8011, "Tệp cùng tên đã tồn tại", HttpStatus.CONFLICT.value()),
+  CYCLIC_FILE_DETECTED(
+      8012, "Phát hiện vòng lặp trong cấu trúc thư mục", HttpStatus.CONFLICT.value()),
 
   // ==== 9xxx - SYSTEM / COMMON ====
-  VALIDATION_FAILED("VALIDATION_FAILED", 9001, "Dữ liệu không hợp lệ"),
-  INTERNAL_ERROR("INTERNAL_ERROR", 9002, "Lỗi hệ thống"),
-  DATABASE_ERROR("DATABASE_ERROR", 9003, "Lỗi truy vấn cơ sở dữ liệu"),
-  SERVICE_UNAVAILABLE("SERVICE_UNAVAILABLE", 9004, "Dịch vụ tạm thời không khả dụng"),
-  RESOURCE_NOT_FOUND("RESOURCE_NOT_FOUND", 9005, "Tài nguyên không tìm thấy"),
-  RESOURCE_CONFLICT("RESOURCE_CONFLICT", 9006, "Tài nguyên đã tồn tại"),
-  DATA_INTEGRITY_VIOLATION("DATA_INTEGRITY_VIOLATION", 9007, "Vi phạm toàn vẹn dữ liệu"),
-  ;
+  VALIDATION_FAILED(9001, "Dữ liệu không hợp lệ", HttpStatus.BAD_REQUEST.value()),
+  INTERNAL_ERROR(9002, "Lỗi hệ thống", HttpStatus.INTERNAL_SERVER_ERROR.value()),
+  DATABASE_ERROR(9003, "Lỗi truy vấn cơ sở dữ liệu", HttpStatus.INTERNAL_SERVER_ERROR.value()),
+  RESOURCE_NOT_FOUND(9005, "Tài nguyên không tìm thấy", HttpStatus.NOT_FOUND.value()),
+  RESOURCE_CONFLICT(9006, "Tài nguyên đã tồn tại", HttpStatus.CONFLICT.value()),
+  DATA_INTEGRITY_VIOLATION(9007, "Vi phạm toàn vẹn dữ liệu", HttpStatus.CONFLICT.value()),
+  UNEXPECTED_ERROR(9999, "Lỗi không mong muốn", HttpStatus.INTERNAL_SERVER_ERROR.value());
 
-  private final String code;
-  private final int codeInt;
+  private final Integer code;
   private final String message;
+  private final Integer httpStatus;
 
-  ErrorCode(String code, int codeInt, String message) {
+  ErrorCode(Integer code, String message, Integer httpStatus) {
     this.code = code;
-    this.codeInt = codeInt;
     this.message = message;
+    this.httpStatus = httpStatus;
   }
 
-  public static final Optional<ErrorCode> fromCode(String code) {
+  public static final Optional<ErrorCode> fromCode(Integer code) {
     return Arrays.stream(ErrorCode.values())
-        .filter(errorCode -> errorCode.getCode().equals(code))
+        .filter(errorCode -> errorCode.getCode() == code)
         .findFirst();
   }
 }

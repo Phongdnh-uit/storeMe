@@ -2,9 +2,11 @@ package com.DPhong.storeMe.exception;
 
 import com.DPhong.storeMe.dto.ApiResponse;
 import com.DPhong.storeMe.dto.ErrorVO;
-import java.util.List;
+import com.DPhong.storeMe.dto.FieldError;
+import com.DPhong.storeMe.enums.ErrorCode;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -19,7 +21,7 @@ public class GlobalExceptionHandler {
             .errorMessage(ex.getErrorCode().getMessage())
             .fieldErrors(ex.getFieldErrors())
             .build();
-    return ResponseEntity.status(HttpStatus.NOT_FOUND)
+    return ResponseEntity.status(ex.getErrorCode().getHttpStatus())
         .body(ApiResponse.error(HttpStatus.NOT_FOUND.value(), errorVO));
   }
 
@@ -31,25 +33,48 @@ public class GlobalExceptionHandler {
             .errorMessage(ex.getErrorCode().getMessage())
             .fieldErrors(ex.getFieldErrors())
             .build();
-    return ResponseEntity.status(HttpStatus.CONFLICT)
-        .body(ApiResponse.error(HttpStatus.CONFLICT.value(), errorVO));
+    return ResponseEntity.status(ex.getErrorCode().getHttpStatus())
+        .body(ApiResponse.error(ex.getErrorCode().getHttpStatus(), errorVO));
   }
 
-  // @ExceptionHandler(VerificationException.class)
-  // public ResponseEntity<ApiResponse<Void>> handleVerification(VerificationException ex) {
-  //   ErrorVO errorVO = new ErrorVO();
-  //   errorVO.setErrors(List.of(new ErrorDetail().setKey("error").setMessage(ex.getMessage())));
-  //   return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-  //       .body(ApiResponse.error(HttpStatus.UNAUTHORIZED.value(), "Unauthorized", errorVO));
-  // }
-  //
-  // @ExceptionHandler(Exception.class)
-  // public ResponseEntity<ApiResponse<Void>> handleGeneralException(Exception ex) {
-  //   ErrorVO errorVO = new ErrorVO();
-  //   errorVO.setErrors(List.of(new ErrorDetail().setKey("error").setMessage(ex.getMessage())));
-  //   return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-  //       .body(
-  //           ApiResponse.error(
-  //               HttpStatus.INTERNAL_SERVER_ERROR.value(), "Internal server error", errorVO));
-  // }
+  @ExceptionHandler(MethodArgumentNotValidException.class)
+  public ResponseEntity<ApiResponse<Void>> handleValidationExceptions(
+      MethodArgumentNotValidException ex) {
+    ErrorVO errorVO =
+        ErrorVO.builder()
+            .errorCode(ErrorCode.VALIDATION_FAILED.getCode())
+            .errorMessage("Validation failed for one or more fields.")
+            .fieldErrors(
+                ex.getBindingResult().getFieldErrors().stream()
+                    .map(
+                        fieldError ->
+                            FieldError.from(fieldError.getField(), fieldError.getDefaultMessage()))
+                    .toList())
+            .build();
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        .body(ApiResponse.error(HttpStatus.BAD_REQUEST.value(), errorVO));
+  }
+
+  @ExceptionHandler(ApiException.class)
+  public ResponseEntity<ApiResponse<Void>> handleApiException(ApiException ex) {
+    ErrorVO errorVO =
+        ErrorVO.builder()
+            .errorCode(ex.getErrorCode().getCode())
+            .errorMessage(ex.getErrorCode().getMessage())
+            .fieldErrors(ex.getFieldErrors())
+            .build();
+    return ResponseEntity.status(ex.getErrorCode().getHttpStatus())
+        .body(ApiResponse.error(ex.getErrorCode().getHttpStatus(), errorVO));
+  }
+
+  @ExceptionHandler(Exception.class)
+  public ResponseEntity<ApiResponse<Void>> handleGenericException(Exception ex) {
+    ErrorVO errorVO =
+        ErrorVO.builder()
+            .errorCode(ErrorCode.UNEXPECTED_ERROR.getCode())
+            .errorMessage("An unexpected error occurred.")
+            .build();
+    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+        .body(ApiResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), errorVO));
+  }
 }
