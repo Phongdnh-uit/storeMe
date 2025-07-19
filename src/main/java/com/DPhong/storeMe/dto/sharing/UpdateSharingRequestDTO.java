@@ -1,4 +1,4 @@
-package com.DPhong.storeMe.dto.fileSystemNode;
+package com.DPhong.storeMe.dto.sharing;
 
 import com.DPhong.storeMe.enums.SharingType;
 import java.util.List;

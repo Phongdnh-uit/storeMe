@@ -1,4 +1,4 @@
-package com.DPhong.storeMe.dto.fileSystemNode;
+package com.DPhong.storeMe.dto.sharing;
 
 import com.DPhong.storeMe.entity.BaseEntity;
 import com.DPhong.storeMe.enums.SharingType;
@@ -15,5 +15,5 @@ public class SharingResponseDTO extends BaseEntity {
 
   private Long sharedFSNode;
 
-  private List<SharingType> permissions;
+  List<SharingType> permissions;
 }
