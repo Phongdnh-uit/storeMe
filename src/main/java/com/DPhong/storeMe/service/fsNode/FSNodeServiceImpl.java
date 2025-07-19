@@ -54,6 +54,7 @@ public class FSNodeServiceImpl implements FSNodeService {
   private final FSNodeMapper fsNodeMapper;
   private final FileMetadataRepository fileMetadataRepository;
   private final StorageService storageService;
+  private final FSPermissionService fsPermissionService;
 
   // ============================ GET ALL ITEM IN FOLDER ============================
   /**
