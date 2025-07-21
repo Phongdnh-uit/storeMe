@@ -60,10 +60,7 @@ public class SecurityConfiguration {
                     .anyRequest()
                     .authenticated())
         .oauth2ResourceServer(
-            oauth2 ->
-                oauth2
-                    .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter))
-                    .authenticationEntryPoint(authenticationEntryPoint))
+            oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter)))
         .addFilterAfter(ensureUserExistsFilter, BearerTokenAuthenticationFilter.class)
         .formLogin(AbstractHttpConfigurer::disable)
         .oauth2Login(
@@ -76,7 +73,8 @@ public class SecurityConfiguration {
                             endpoint.baseUri(BASE_URL + "/oauth2/callback/{registrationId}"))
                     .successHandler(oauth2AuthenticationSuccessHandler))
         .sessionManagement(
-            session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+            session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .exceptionHandling(ex -> ex.authenticationEntryPoint(authenticationEntryPoint));
     return http.build();
   }
 }

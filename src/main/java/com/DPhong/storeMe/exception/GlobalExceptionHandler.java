@@ -6,6 +6,7 @@ import com.DPhong.storeMe.dto.FieldError;
 import com.DPhong.storeMe.enums.ErrorCode;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -65,6 +66,18 @@ public class GlobalExceptionHandler {
             .build();
     return ResponseEntity.status(ex.getErrorCode().getHttpStatus())
         .body(ApiResponse.error(ex.getErrorCode().getHttpStatus(), errorVO));
+  }
+
+  @ExceptionHandler(BadCredentialsException.class)
+  public ResponseEntity<ApiResponse<Void>> handleBadCredentialsException(
+      BadCredentialsException ex) {
+    ErrorVO errorVO =
+        ErrorVO.builder()
+            .errorCode(ErrorCode.AUTH_FAILED.getCode())
+            .errorMessage("Invalid email or password.")
+            .build();
+    return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+        .body(ApiResponse.error(HttpStatus.UNAUTHORIZED.value(), errorVO));
   }
 
   @ExceptionHandler(Exception.class)
