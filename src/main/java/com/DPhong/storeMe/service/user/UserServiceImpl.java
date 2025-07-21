@@ -1,8 +1,10 @@
 package com.DPhong.storeMe.service.user;
 
 import com.DPhong.storeMe.dto.FieldError;
+import com.DPhong.storeMe.dto.PageResponse;
 import com.DPhong.storeMe.dto.authentication.ChangePasswordRequestDTO;
 import com.DPhong.storeMe.dto.authentication.RegisterRequestDTO;
+import com.DPhong.storeMe.dto.user.UserRequestDTO;
 import com.DPhong.storeMe.dto.user.UserResponseDTO;
 import com.DPhong.storeMe.entity.Role;
 import com.DPhong.storeMe.entity.User;
@@ -20,6 +22,9 @@ import com.DPhong.storeMe.security.SecurityUtils;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -119,5 +124,71 @@ public class UserServiceImpl implements UserService {
     return userRepository
         .findById(securityUtils.getCurrentUserId())
         .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+  }
+
+  @Override
+  public PageResponse<UserResponseDTO> getAll(Specification<User> spec, Pageable pageable) {
+    Page<User> userPage = userRepository.findAll(spec, pageable);
+    return PageResponse.from(userPage.map(userMapper::entityToResponse));
+  }
+
+  @Override
+  public UserResponseDTO create(UserRequestDTO userRequestDTO) {
+    validateUser(0L, userRequestDTO);
+    User user = userMapper.requestToEntity(userRequestDTO);
+    user.setStatus(UserStatus.UNVERIFIED);
+    user.setLoginProvider(LoginProvider.LOCAL);
+    user.setRole(
+        roleRepository
+            .findByName(RoleName.USER.getName())
+            .orElseThrow(() -> new ResourceNotFoundException("Role not found")));
+    user.setPasswordHash(passwordEncoder.encode(userRequestDTO.getPassword()));
+    user = userRepository.save(user);
+    return userMapper.entityToResponse(user);
+  }
+
+  @Override
+  public UserResponseDTO update(Long userId, UserRequestDTO userRequestDTO) {
+    validateUser(userId, userRequestDTO);
+    User user =
+        userRepository
+            .findById(userId)
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+    userMapper.partialUpdate(userRequestDTO, user);
+    user = userRepository.save(user);
+    return userMapper.entityToResponse(user);
+  }
+
+  @Override
+  public void delete(Long userId) {
+    if (!userRepository.existsById(userId)) {
+      throw new ResourceNotFoundException("User not found");
+    }
+    userRepository.deleteById(userId);
+  }
+
+  /**
+   * @param userId the ID of the user to validate ( 0 <= for new users)
+   * @param userRequestDTO the user data to validate
+   */
+  void validateUser(Long userId, UserRequestDTO userRequestDTO) {
+    List<FieldError> fieldErrors = new ArrayList<>();
+    if (userRepository.exists(
+        (root, _, builder) ->
+            builder.and(
+                builder.equal(root.get("email"), userRequestDTO.getEmail()),
+                builder.notEqual(root.get("id"), userId)))) {
+      fieldErrors.add(FieldError.from("email", "Email đã tồn tại"));
+    }
+    if (userRepository.exists(
+        (root, _, builder) ->
+            builder.and(
+                builder.equal(root.get("username"), userRequestDTO.getUsername()),
+                builder.notEqual(root.get("id"), userId)))) {
+      fieldErrors.add(FieldError.from("username", "Username đã tồn tại"));
+    }
+    if (!fieldErrors.isEmpty()) {
+      throw new DataConflictException(fieldErrors);
+    }
   }
 }
