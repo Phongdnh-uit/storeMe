@@ -73,12 +73,12 @@ public class FSNodeServiceImpl implements FSNodeService {
     Long userId = securityUtils.getCurrentUserId();
     // 2. ---- Build basic spec ----
     Specification<FSNode> baseSpec =
-        (root, _, builder) ->
-            builder.and(
-                builder.equal(root.get("user").get("id"), userId),
-                builder.isNull(root.get("deletedAt")));
+        (root, _, builder) -> builder.and(builder.isNull(root.get("deletedAt")));
     // 3. ---- Add parentId condition ----
     if (parentId != null) {
+      FSNode parentFolder = getParentFolder(parentId);
+      // 3.1 ---- Check if user has permission to access the parent folder ----
+      fsPermissionService.checkCanRead(userId, parentFolder);
       baseSpec =
           baseSpec.and((root, _, builder) -> builder.equal(root.get("parent").get("id"), parentId));
     } else {
@@ -103,13 +103,13 @@ public class FSNodeServiceImpl implements FSNodeService {
             .findOne(
                 (root, _, builder) ->
                     builder.and(
-                        builder.equal(root.get("id"), id),
-                        builder.equal(root.get("user").get("id"), userId),
-                        builder.isNull(root.get("deletedAt"))))
+                        builder.equal(root.get("id"), id), builder.isNull(root.get("deletedAt"))))
             .orElseThrow(
                 () ->
                     new ResourceNotFoundException(
                         "Item not found or does not belong to current user."));
+    // 2.1 ---- Check if user has permission to access the item ----
+    fsPermissionService.checkCanRead(userId, fsNode);
     // 3. ---- Map to response DTO ----
     return fsNodeMapper.entityToResponse(fsNode);
   }
@@ -119,9 +119,11 @@ public class FSNodeServiceImpl implements FSNodeService {
   public FSResponseDTO createFolder(CreateFolderRequestDTO request) {
     // 1. ---- validate ----
     FSNode parentFolder =
-        request.getParentId() == null
-            ? null
-            : validateParentFolder(request.getParentId(), securityUtils.getCurrentUserId());
+        request.getParentId() == null ? null : getParentFolder(request.getParentId());
+    // 1.1 ---- Check if user has permission to create folder in parent folder ----
+    if (parentFolder != null) {
+      fsPermissionService.checkCanWrite(securityUtils.getCurrentUserId(), parentFolder);
+    }
     List<FSNode> items = getItemInNode(request.getParentId());
     if (items.stream()
         .anyMatch(
@@ -172,9 +174,11 @@ public class FSNodeServiceImpl implements FSNodeService {
           "Total file size exceeds the storage limit of the current plan.");
     }
     FSNode parentFolder =
-        request.getParentId() == null
-            ? null
-            : validateParentFolder(request.getParentId(), securityUtils.getCurrentUserId());
+        request.getParentId() == null ? null : getParentFolder(request.getParentId());
+    // 1.3 ---- Check if user has permission to upload files in parent folder ----
+    if (parentFolder != null) {
+      fsPermissionService.checkCanWrite(userId, parentFolder);
+    }
     List<FSNode> items = getItemInNode(request.getParentId());
     Set<String> existingFileNames =
         items.stream()
@@ -227,23 +231,25 @@ public class FSNodeServiceImpl implements FSNodeService {
   // ============================ GET FILE ============================
   @Override
   public Resource getFile(Long id) {
+    // 1. ---- Get file ----
     FSNode fsNode =
         repository
             .findOne(
                 (root, _, builder) ->
                     builder.and(
                         builder.equal(root.get("id"), id),
-                        builder.equal(root.get("user").get("id"), securityUtils.getCurrentUserId()),
+                        builder.equal(root.get("type"), FSType.FILE),
                         builder.isNull(root.get("deletedAt"))))
             .orElseThrow(() -> new ResourceNotFoundException());
 
-    if (fsNode.getType() != FSType.FILE) {
-      throw new ResourceNotFoundException();
-    }
+    // 2. ---- Check if user has permission to access the file ----
+    fsPermissionService.checkCanRead(securityUtils.getCurrentUserId(), fsNode);
+
     FileMetadata fileMetadata = fsNode.getFileMetadata();
     if (fileMetadata == null) {
       throw new ApiException(ErrorCode.DATA_INTEGRITY_VIOLATION);
     }
+
     String blobKey = fileMetadata.getBlobKey();
     String path = generateBlobPath(blobKey);
     Resource resource = storageService.loadFileAsResource(path);
@@ -256,28 +262,55 @@ public class FSNodeServiceImpl implements FSNodeService {
   public FSResponseDTO update(Long id, UpdateFSNodeRequestDTO request) {
     // 1. ---- Validate ----
     FSNode fsNode = getItemById(id);
-    FSNode parentFolder =
-        request.getParentId() == null
-            ? null
-            : validateParentFolder(request.getParentId(), securityUtils.getCurrentUserId());
-    List<FSNode> items = getItemInNode(request.getParentId());
-    if (items.stream()
-        .anyMatch(item -> item.getName().equals(request.getName()) && !item.getId().equals(id))) {
-      throw new DataConflictException("File system node with this name already exists.");
-    }
+    // 1.1 ---- Check if user has permission to update the item ----
+    fsPermissionService.checkCanWrite(securityUtils.getCurrentUserId(), fsNode);
     //  2. ---- Handle in each case ----
     switch (request.getAction()) {
       case RENAME:
+        List<FSNode> itemsInNode =
+            getItemInNode(fsNode.getParent() == null ? null : fsNode.getParent().getId());
+        if (itemsInNode.stream()
+            .anyMatch(
+                item -> item.getName().equals(request.getName()) && !item.getId().equals(id))) {
+          throw new DataConflictException("File system node with this name already exists.");
+        }
         fsNode.setName(request.getName());
         fsNode.setLastAccessed(Instant.now());
         return fsNodeMapper.entityToResponse(repository.save(fsNode));
       case MOVE:
+        //  ---- Only move in same store space ----
+        FSNode moveTarget =
+            request.getParentId() == null ? null : getParentFolder(request.getParentId());
+        // 2.1 ---- Check if user has permission to copy the item to parent folder ----
+        if (moveTarget != null) {
+          fsPermissionService.checkCanWrite(securityUtils.getCurrentUserId(), moveTarget);
+          if (moveTarget.getUser().getId() != fsNode.getUser().getId()) {
+            throw new ApiException(ErrorCode.ACCESS_DENIED);
+          }
+        } else {
+          // If moveTarget is null, it means we are moving to root folder
+          if (fsNode.getUser().getId() != securityUtils.getCurrentUserId()) {
+            throw new ApiException(ErrorCode.ACCESS_DENIED);
+          }
+        }
         // Move item to another folder
-        fsNode = moveItem(fsNode, parentFolder);
+        fsNode = moveItem(fsNode, moveTarget);
         return fsNodeMapper.entityToResponse(fsNode);
       case COPY:
+        FSNode copyTarget =
+            request.getParentId() == null ? null : getParentFolder(request.getParentId());
+        // 2.1 ---- Check if user has permission to copy the item to parent folder ----
+        if (copyTarget != null) {
+          fsPermissionService.checkCanWrite(securityUtils.getCurrentUserId(), copyTarget);
+        }
+        List<FSNode> itemsInTarget = getItemInNode(request.getParentId());
+        if (itemsInTarget.stream()
+            .anyMatch(
+                item -> item.getName().equals(request.getName()) && !item.getId().equals(id))) {
+          throw new DataConflictException("File system node with this name already exists.");
+        }
         // Copy item to another folder
-        fsNode = copy(fsNode, parentFolder);
+        fsNode = copy(fsNode, copyTarget);
         return fsNodeMapper.entityToResponse(fsNode);
     }
     throw new UnsupportedOperationException(
@@ -295,13 +328,11 @@ public class FSNodeServiceImpl implements FSNodeService {
             .findOne(
                 (root, _, builder) ->
                     builder.and(
-                        builder.equal(root.get("id"), id),
-                        builder.equal(root.get("user").get("id"), securityUtils.getCurrentUserId()),
-                        builder.isNull(root.get("deletedAt"))))
-            .orElseThrow(
-                () ->
-                    new ResourceNotFoundException(
-                        "Item not found or does not belong to current user."));
+                        builder.equal(root.get("id"), id), builder.isNull(root.get("deletedAt"))))
+            .orElseThrow(() -> new ResourceNotFoundException("Item not found."));
+    // 1.1 ---- Check if user has permission to delete the item ----
+    fsPermissionService.checkCanDelete(securityUtils.getCurrentUserId(), item);
+
     item.setDeletedAt(now);
     item.setLastAccessed(now);
     // Set parent to null to make it a root item in trash
@@ -316,9 +347,7 @@ public class FSNodeServiceImpl implements FSNodeService {
                   builder.function(
                       "array_position", Integer.class, root.get("ancestor"), builder.literal(id));
               return builder.and(
-                  builder.greaterThan(pos, 0),
-                  builder.equal(root.get("user").get("id"), securityUtils.getCurrentUserId()),
-                  builder.isNull(root.get("deletedAt")));
+                  builder.greaterThan(pos, 0), builder.isNull(root.get("deletedAt")));
             });
     subNodes.stream()
         .forEach(
@@ -370,7 +399,7 @@ public class FSNodeServiceImpl implements FSNodeService {
     // 3. ---- Check if parent is exists through ancestor ----
     if (!fsNode.getAncestor().isEmpty()) {
       Long parentId = fsNode.getAncestor().getLast();
-      FSNode parent = validateParentFolder(parentId, userId);
+      FSNode parent = getParentFolder(parentId);
       fsNode.setParent(parent);
     }
     // 3. ---- Restore item by setting deletedAt to null and lastAccessed to now ----
@@ -392,6 +421,7 @@ public class FSNodeServiceImpl implements FSNodeService {
                 (root, _, builder) ->
                     builder.and(
                         builder.equal(root.get("id"), id),
+                        builder.isNull(root.get("parent")), // Only delete root items in trash
                         builder.equal(root.get("user").get("id"), userId),
                         builder.isNotNull(root.get("deletedAt"))))
             .orElseThrow(
@@ -422,9 +452,7 @@ public class FSNodeServiceImpl implements FSNodeService {
                       root.get("ancestor"),
                       builder.literal(fsNode.getId()));
               return builder.and(
-                  builder.greaterThan(pos, 0),
-                  builder.equal(root.get("user").get("id"), securityUtils.getCurrentUserId()),
-                  builder.isNotNull(root.get("deletedAt")));
+                  builder.greaterThan(pos, 0), builder.isNotNull(root.get("deletedAt")));
             });
 
     // 7. ---- Delete sub-nodes and their file metadata if exists ----
@@ -455,14 +483,9 @@ public class FSNodeServiceImpl implements FSNodeService {
    * @param parentId The ID of the parent folder. If null, it retrieves nodes at the root level.
    */
   private List<FSNode> getItemInNode(Long parentId) {
-    // 1. ---- Get current user id ----
-    Long userId = securityUtils.getCurrentUserId();
     // 2. ---- Build basic spec ----
     Specification<FSNode> spec =
-        (root, _, builder) ->
-            builder.and(
-                builder.equal(root.get("user").get("id"), userId),
-                builder.isNull(root.get("deletedAt")));
+        (root, _, builder) -> builder.and(builder.isNull(root.get("deletedAt")));
     // 3. ---- Add parentId condition ----
     if (parentId != null) {
       spec = spec.and((root, _, builder) -> builder.equal(root.get("parent").get("id"), parentId));
@@ -477,28 +500,25 @@ public class FSNodeServiceImpl implements FSNodeService {
         .findOne(
             (root, _, builder) ->
                 builder.and(
-                    builder.equal(root.get("id"), id),
-                    builder.equal(root.get("user").get("id"), securityUtils.getCurrentUserId()),
-                    builder.isNull(root.get("deletedAt"))))
+                    builder.equal(root.get("id"), id), builder.isNull(root.get("deletedAt"))))
         .orElseThrow(
             () ->
                 new ResourceNotFoundException(
                     "Item not found or does not belong to current user."));
   }
 
-  private FSNode validateParentFolder(Long parentId, Long userId) {
-    return repository
-        .findOne(
-            (root, _, builder) ->
-                builder.and(
-                    builder.equal(root.get("id"), parentId),
-                    builder.equal(root.get("user").get("id"), userId),
-                    builder.equal(root.get("type"), FSType.FOLDER),
-                    builder.isNull(root.get("deletedAt"))))
-        .orElseThrow(
-            () ->
-                new ResourceNotFoundException(
-                    "Parent folder not found or does not belong to current user."));
+  /** This method get the parent folder if it exists. */
+  private FSNode getParentFolder(Long parentId) {
+    FSNode result =
+        repository
+            .findOne(
+                (root, _, builder) ->
+                    builder.and(
+                        builder.equal(root.get("id"), parentId),
+                        builder.equal(root.get("type"), FSType.FOLDER),
+                        builder.isNull(root.get("deletedAt"))))
+            .orElseThrow(() -> new ResourceNotFoundException("Parent folder not found."));
+    return result;
   }
 
   private String getUniqueFileName(String originalFileName, Set<String> existingFileNames) {
@@ -674,7 +694,10 @@ public class FSNodeServiceImpl implements FSNodeService {
     copiedNode.setName(fsNode.getName());
     copiedNode.setType(fsNode.getType());
     copiedNode.setSize(fsNode.getSize());
-    copiedNode.setUser(fsNode.getUser());
+    copiedNode.setUser(
+        userRepository
+            .findById(securityUtils.getCurrentUserId())
+            .orElseThrow(() -> new ResourceNotFoundException("User not found.")));
     copiedNode.setHidden(fsNode.isHidden());
     copiedNode.setLocked(fsNode.isLocked());
     copiedNode.setLastAccessed(Instant.now());

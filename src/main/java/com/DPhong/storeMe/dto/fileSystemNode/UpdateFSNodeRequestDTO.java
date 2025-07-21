@@ -10,7 +10,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class UpdateFSNodeRequestDTO {
-  @NotNull private Long parentId;
+  private Long parentId;
 
   @NotBlank
   @Size(max = 255, message = "Max length of name is 255 characters")

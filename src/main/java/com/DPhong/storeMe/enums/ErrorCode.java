@@ -40,6 +40,7 @@ public enum ErrorCode {
   FILE_NAME_CONFLICT(8011, "Tệp cùng tên đã tồn tại", HttpStatus.CONFLICT.value()),
   CYCLIC_FILE_DETECTED(
       8012, "Phát hiện vòng lặp trong cấu trúc thư mục", HttpStatus.CONFLICT.value()),
+  FSNODE_LOCKED(8013, "Tệp hoặc thư mục đang bị khóa", HttpStatus.CONFLICT.value()),
 
   // ==== 9xxx - SYSTEM / COMMON ====
   VALIDATION_FAILED(9001, "Dữ liệu không hợp lệ", HttpStatus.BAD_REQUEST.value()),

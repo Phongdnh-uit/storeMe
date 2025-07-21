@@ -21,10 +21,17 @@ public class FSPermissionServiceImpl implements FSPermissionService {
 
   @Override
   public void checkCanRead(Long userId, FSNode fsNodeId) {
-    if (isOwner(userId, fsNodeId)) {
-      return; // Owner can always read
+    if (isLocked(fsNodeId)) {
+      throw new ApiException(ErrorCode.FSNODE_LOCKED);
     }
     Optional<Sharing> sharing = getSharedIfExists(userId, fsNodeId);
+    if (sharing.isEmpty()) {
+      throw new ApiException(
+          ErrorCode.ACCESS_DENIED, "You do not have permission to read this file");
+    }
+    if (isOwner(userId, fsNodeId, sharing.get())) {
+      return; // Owner can always read
+    }
     boolean canRead =
         sharingPermissionRepository.exists(
             (root, _, builder) ->
@@ -39,10 +46,17 @@ public class FSPermissionServiceImpl implements FSPermissionService {
 
   @Override
   public void checkCanWrite(Long userId, FSNode fsNodeId) {
-    if (isOwner(userId, fsNodeId)) {
-      return; // Owner can always write
+    if (isLocked(fsNodeId)) {
+      throw new ApiException(ErrorCode.FSNODE_LOCKED);
     }
     Optional<Sharing> sharing = getSharedIfExists(userId, fsNodeId);
+    if (sharing.isEmpty()) {
+      throw new ApiException(
+          ErrorCode.ACCESS_DENIED, "You do not have permission to write to this file");
+    }
+    if (isOwner(userId, fsNodeId, sharing.get())) {
+      return; // Owner can always write
+    }
     boolean canWrite =
         sharingPermissionRepository.exists(
             (root, _, builder) ->
@@ -57,10 +71,17 @@ public class FSPermissionServiceImpl implements FSPermissionService {
 
   @Override
   public void checkCanDelete(Long userId, FSNode fsNodeId) {
-    if (isOwner(userId, fsNodeId)) {
-      return; // Owner can always delete
+    if (isLocked(fsNodeId)) {
+      throw new ApiException(ErrorCode.FSNODE_LOCKED);
     }
     Optional<Sharing> sharing = getSharedIfExists(userId, fsNodeId);
+    if (sharing.isEmpty()) {
+      throw new ApiException(
+          ErrorCode.ACCESS_DENIED, "You do not have permission to delete this file");
+    }
+    if (isOwner(userId, fsNodeId, sharing.get())) {
+      return; // Owner can always delete
+    }
     boolean canDelete =
         sharingPermissionRepository.exists(
             (root, _, builder) ->
@@ -73,8 +94,21 @@ public class FSPermissionServiceImpl implements FSPermissionService {
     }
   }
 
-  boolean isOwner(Long userId, FSNode fsNode) {
-    return fsNode.getUser().getId().equals(userId);
+  boolean isLocked(FSNode fsNode) {
+    return fsNode.isLocked();
+  }
+
+  boolean isOwner(Long userId, FSNode fsNode, Sharing sharing) {
+    if (fsNode.getUser().getId() == userId) {
+      return true; // User is the owner of the FSNode
+    }
+    boolean isOwner =
+        sharingPermissionRepository.exists(
+            (root, _, builder) ->
+                builder.and(
+                    builder.equal(root.get("sharingId"), sharing.getId()),
+                    builder.equal(root.get("sharingType"), SharingType.OWNER)));
+    return isOwner;
   }
 
   Optional<Sharing> getSharedIfExists(Long userId, FSNode fsNode) {
