@@ -8,6 +8,7 @@ import com.DPhong.storeMe.dto.authentication.LoginRequestDTO;
 import com.DPhong.storeMe.dto.authentication.RefreshTokenRequestDTO;
 import com.DPhong.storeMe.dto.authentication.RegisterRequestDTO;
 import com.DPhong.storeMe.dto.authentication.ResetPasswordRequestDTO;
+import com.DPhong.storeMe.dto.authentication.UpdateAccountRequestDTO;
 import com.DPhong.storeMe.dto.user.UserResponseDTO;
 import com.DPhong.storeMe.service.authentication.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -95,5 +96,11 @@ public class AuthController {
   @GetMapping("/me")
   public ResponseEntity<ApiResponse<UserResponseDTO>> getCurrentUser() {
     return ResponseEntity.ok(ApiResponse.success(authService.getAccount()));
+  }
+
+  @PutMapping("/me")
+  public ResponseEntity<ApiResponse<UserResponseDTO>> updateAccount(
+      @Valid @RequestBody UpdateAccountRequestDTO userResponseDTO) {
+    return ResponseEntity.ok(ApiResponse.success(authService.updateAccount(userResponseDTO)));
   }
 }

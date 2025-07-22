@@ -6,12 +6,14 @@ import com.DPhong.storeMe.dto.authentication.LoginRequestDTO;
 import com.DPhong.storeMe.dto.authentication.RefreshTokenRequestDTO;
 import com.DPhong.storeMe.dto.authentication.RegisterRequestDTO;
 import com.DPhong.storeMe.dto.authentication.ResetPasswordRequestDTO;
+import com.DPhong.storeMe.dto.authentication.UpdateAccountRequestDTO;
 import com.DPhong.storeMe.dto.user.UserResponseDTO;
 import com.DPhong.storeMe.entity.RefreshToken;
 import com.DPhong.storeMe.entity.User;
 import com.DPhong.storeMe.entity.Verification;
 import com.DPhong.storeMe.enums.UserStatus;
 import com.DPhong.storeMe.enums.VerificationType;
+import com.DPhong.storeMe.mapper.UserMapper;
 import com.DPhong.storeMe.repository.UserRepository;
 import com.DPhong.storeMe.security.SecurityUtils;
 import com.DPhong.storeMe.security.TokenProvider;
@@ -38,6 +40,7 @@ public class AuthServiceImpl implements AuthService {
   private final AuthenticationManagerBuilder authenticationManagerBuilder;
   private final SecurityUtils securityUtils;
   private final PasswordEncoder passwordEncoder;
+  private final UserMapper userMapper;
 
   // ============================ REGISTER USER ============================
   @Override
@@ -180,5 +183,20 @@ public class AuthServiceImpl implements AuthService {
     user.setPasswordHash(passwordEncoder.encode(resetPasswordRequestDTO.getNewPassword()));
     userRepository.save(user);
     verificationService.deleteVerification(verification);
+  }
+
+  // ============================ UPDATE ACCOUNT ============================
+  @Override
+  public UserResponseDTO updateAccount(UpdateAccountRequestDTO updateAccountRequestDTO) {
+    Long userId = securityUtils.getCurrentUserId();
+    User user =
+        userRepository
+            .findById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("User not found with id: " + userId));
+    // Update user fields
+    user.setUsername(updateAccountRequestDTO.getUsername());
+    user.setEmail(updateAccountRequestDTO.getEmail());
+    user = userRepository.save(user);
+    return userMapper.entityToResponse(user);
   }
 }

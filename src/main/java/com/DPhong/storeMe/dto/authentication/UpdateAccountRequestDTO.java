@@ -1,15 +1,15 @@
-package com.DPhong.storeMe.dto.user;
+package com.DPhong.storeMe.dto.authentication;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-public class UserRequestDTO {
+public class UpdateAccountRequestDTO {
+
   @NotBlank
   @Pattern(
       regexp = "^[a-zA-Z0-9]{3,20}$",
@@ -17,6 +17,4 @@ public class UserRequestDTO {
   private String username;
 
   @NotBlank @Email private String email;
-
-  @NotNull Long roleId;
 }

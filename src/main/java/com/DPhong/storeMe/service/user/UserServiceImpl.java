@@ -140,9 +140,8 @@ public class UserServiceImpl implements UserService {
     user.setLoginProvider(LoginProvider.LOCAL);
     user.setRole(
         roleRepository
-            .findByName(RoleName.USER.getName())
+            .findById(userRequestDTO.getRoleId())
             .orElseThrow(() -> new ResourceNotFoundException("Role not found")));
-    user.setPasswordHash(passwordEncoder.encode(userRequestDTO.getPassword()));
     user = userRepository.save(user);
     return userMapper.entityToResponse(user);
   }
@@ -155,6 +154,10 @@ public class UserServiceImpl implements UserService {
             .findById(userId)
             .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     userMapper.partialUpdate(userRequestDTO, user);
+    user.setRole(
+        roleRepository
+            .findById(userRequestDTO.getRoleId())
+            .orElseThrow(() -> new ResourceNotFoundException("Role not found")));
     user = userRepository.save(user);
     return userMapper.entityToResponse(user);
   }
