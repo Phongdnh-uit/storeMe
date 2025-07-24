@@ -9,7 +9,7 @@ import org.springframework.http.HttpStatus;
 public enum ErrorCode {
 
   // ==== 1xxx - AUTH ====
-  AUTH_FAILED(1001, "Đăng nhập thất bại", HttpStatus.UNAUTHORIZED.value()),
+  AUTH_FAILED(1001, "Xác thực thất bại", HttpStatus.UNAUTHORIZED.value()),
   TOKEN_EXPIRED(1002, "Token đã hết hạn", HttpStatus.UNAUTHORIZED.value()),
   INVALID_TOKEN(1003, "Token không hợp lệ", HttpStatus.UNAUTHORIZED.value()),
   ACCESS_DENIED(1004, "Truy cập bị từ chối", HttpStatus.FORBIDDEN.value()),

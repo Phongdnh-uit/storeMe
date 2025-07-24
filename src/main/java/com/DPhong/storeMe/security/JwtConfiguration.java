@@ -37,12 +37,7 @@ public class JwtConfiguration {
     NimbusJwtDecoder jwtDecoder =
         NimbusJwtDecoder.withSecretKey(getSecretKey()).macAlgorithm(JWT_ALGORITHM).build();
     return token -> {
-      try {
-        return jwtDecoder.decode(token);
-      } catch (Exception e) {
-        System.out.println(">>> JWT error: " + e.getMessage());
-        throw e;
-      }
+      return jwtDecoder.decode(token);
     };
   }
 
