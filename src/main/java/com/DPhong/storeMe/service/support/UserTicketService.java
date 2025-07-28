@@ -6,7 +6,7 @@ import com.DPhong.storeMe.entity.Ticket;
 import com.DPhong.storeMe.service.CrudService;
 
 public interface UserTicketService
-    extends CrudService<Ticket, Long, TicketRequestDTO, TicketResponseDTO> {
+    extends CrudService<Ticket, Long, TicketRequestDTO, TicketResponseDTO>, TicketCommentService {
 
   void closeTicket(Long id);
 }

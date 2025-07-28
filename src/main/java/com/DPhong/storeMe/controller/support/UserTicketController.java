@@ -3,6 +3,8 @@ package com.DPhong.storeMe.controller.support;
 import com.DPhong.storeMe.constant.AppConstant;
 import com.DPhong.storeMe.dto.ApiResponse;
 import com.DPhong.storeMe.dto.PageResponse;
+import com.DPhong.storeMe.dto.support.TicketCommentRequestDTO;
+import com.DPhong.storeMe.dto.support.TicketCommentResponseDTO;
 import com.DPhong.storeMe.dto.support.TicketRequestDTO;
 import com.DPhong.storeMe.dto.support.TicketResponseDTO;
 import com.DPhong.storeMe.entity.Ticket;
@@ -13,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -55,6 +58,27 @@ public class UserTicketController {
   @PatchMapping("/{id}/close")
   public ResponseEntity<ApiResponse<Void>> close(@PathVariable("id") Long id) {
     userTicketService.closeTicket(id);
+    return ResponseEntity.ok(ApiResponse.success(null));
+  }
+
+  @PostMapping("/{id}/comment")
+  public <AdminTicketService> ResponseEntity<ApiResponse<TicketCommentResponseDTO>> commentOnTicket(
+      @PathVariable("id") Long id, TicketCommentRequestDTO request) {
+    TicketCommentResponseDTO response = userTicketService.addCommentToTicket(id, request);
+    return ResponseEntity.ok(ApiResponse.success(response));
+  }
+
+  @PutMapping("/comment/{commentId}")
+  public ResponseEntity<ApiResponse<TicketCommentResponseDTO>> updateTicketComment(
+      @PathVariable("commentId") Long commentId, TicketCommentRequestDTO request) {
+    TicketCommentResponseDTO response = userTicketService.updateComment(commentId, request);
+    return ResponseEntity.ok(ApiResponse.success(response));
+  }
+
+  @DeleteMapping("/comment/{commentId}")
+  public ResponseEntity<ApiResponse<Void>> deleteTicketComment(
+      @PathVariable("commentId") Long commentId) {
+    userTicketService.deleteComment(commentId);
     return ResponseEntity.ok(ApiResponse.success(null));
   }
 }
