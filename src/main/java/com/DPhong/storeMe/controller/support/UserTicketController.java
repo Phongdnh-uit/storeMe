@@ -1,0 +1,60 @@
+package com.DPhong.storeMe.controller.support;
+
+import com.DPhong.storeMe.constant.AppConstant;
+import com.DPhong.storeMe.dto.ApiResponse;
+import com.DPhong.storeMe.dto.PageResponse;
+import com.DPhong.storeMe.dto.support.TicketRequestDTO;
+import com.DPhong.storeMe.dto.support.TicketResponseDTO;
+import com.DPhong.storeMe.entity.Ticket;
+import com.DPhong.storeMe.service.support.UserTicketService;
+import com.turkraft.springfilter.boot.Filter;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@RequiredArgsConstructor
+@RequestMapping(AppConstant.BASE_URL + "/support/tickets")
+@RestController
+public class UserTicketController {
+  private final UserTicketService userTicketService;
+
+  @GetMapping
+  public ResponseEntity<ApiResponse<PageResponse<TicketResponseDTO>>> getAll(
+      @Filter Specification<Ticket> specification, Pageable pageable) {
+    return ResponseEntity.ok(
+        ApiResponse.success(userTicketService.findAll(specification, pageable)));
+  }
+
+  @GetMapping("/{id}")
+  public ResponseEntity<ApiResponse<TicketResponseDTO>> getById(@PathVariable("id") Long id) {
+    return ResponseEntity.ok(ApiResponse.success(userTicketService.findById(id)));
+  }
+
+  @PostMapping
+  public ResponseEntity<ApiResponse<TicketResponseDTO>> create(
+      @Valid @RequestBody TicketRequestDTO request) {
+    return ResponseEntity.ok(ApiResponse.success(userTicketService.create(request)));
+  }
+
+  @PutMapping("/{id}")
+  public ResponseEntity<ApiResponse<TicketResponseDTO>> update(
+      @PathVariable("id") Long id, @Valid @RequestBody TicketRequestDTO request) {
+    return ResponseEntity.ok(ApiResponse.success(userTicketService.update(id, request)));
+  }
+
+  @PatchMapping("/{id}/close")
+  public ResponseEntity<ApiResponse<Void>> close(@PathVariable("id") Long id) {
+    userTicketService.closeTicket(id);
+    return ResponseEntity.ok(ApiResponse.success(null));
+  }
+}

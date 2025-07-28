@@ -4,7 +4,8 @@ import com.DPhong.storeMe.dto.storagePlan.StoragePlanRequestDTO;
 import com.DPhong.storeMe.dto.storagePlan.StoragePlanResponseDTO;
 import com.DPhong.storeMe.entity.StoragePlan;
 import com.DPhong.storeMe.exception.DataConflictException;
-import com.DPhong.storeMe.mapper.StoragePlanMapper;
+import com.DPhong.storeMe.mapper.GenericMapper;
+import com.DPhong.storeMe.repository.SimpleRepository;
 import com.DPhong.storeMe.repository.StoragePlanRepository;
 import com.DPhong.storeMe.service.GenericService;
 import org.springframework.stereotype.Service;
@@ -14,8 +15,10 @@ public class StoragePlanServiceImpl
     extends GenericService<StoragePlan, StoragePlanRequestDTO, StoragePlanResponseDTO>
     implements StoragePlanService {
 
-  public StoragePlanServiceImpl(StoragePlanRepository repository, StoragePlanMapper mapper) {
-    super(repository, mapper, StoragePlan.class);
+  public StoragePlanServiceImpl(
+      SimpleRepository<StoragePlan, Long> repository,
+      GenericMapper<StoragePlan, StoragePlanRequestDTO, StoragePlanResponseDTO> mapper) {
+    super(repository, mapper);
   }
 
   @Override

@@ -22,7 +22,6 @@ import org.springframework.data.jpa.domain.Specification;
 public abstract class GenericService<E, I, O> implements CrudService<E, Long, I, O> {
   protected final SimpleRepository<E, Long> repository;
   protected final GenericMapper<E, I, O> mapper;
-  protected final Class<E> entityClass;
 
   // ============================ HELPER ============================
   /**
@@ -31,10 +30,7 @@ public abstract class GenericService<E, I, O> implements CrudService<E, Long, I,
    * @throws ResourceNotFoundException if the entity is not found
    */
   protected E findByIdOrThrow(Long id) {
-    return repository
-        .findById(id)
-        .orElseThrow(
-            () -> new ResourceNotFoundException(entityClass.getSimpleName() + " not found"));
+    return repository.findById(id).orElseThrow(() -> new ResourceNotFoundException());
   }
 
   // ============================ GET ALL ============================
@@ -92,7 +88,7 @@ public abstract class GenericService<E, I, O> implements CrudService<E, Long, I,
   public void deleteAllById(Iterable<Long> ids) {
     List<E> entities = repository.findAllById(ids);
     if (entities.size() != StreamSupport.stream(ids.spliterator(), false).count()) {
-      throw new ResourceNotFoundException("Some " + entityClass.getSimpleName() + " not found");
+      throw new ResourceNotFoundException();
     }
     repository.deleteAll(entities);
   }

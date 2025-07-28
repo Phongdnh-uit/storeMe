@@ -23,7 +23,7 @@ public class RoleServiceImpl extends GenericService<Role, RoleRequestDTO, RoleRe
 
   public RoleServiceImpl(
       RoleRepository repository, RoleMapper mapper, UserRepository userRepository) {
-    super(repository, mapper, Role.class);
+    super(repository, mapper);
     this.userRepository = userRepository;
   }
 
