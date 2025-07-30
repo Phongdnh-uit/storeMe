@@ -11,6 +11,7 @@ import com.DPhong.storeMe.dto.authentication.ResetPasswordRequestDTO;
 import com.DPhong.storeMe.dto.authentication.UpdateAccountRequestDTO;
 import com.DPhong.storeMe.dto.user.UserResponseDTO;
 import com.DPhong.storeMe.service.authentication.AuthService;
+import com.DPhong.storeMe.service.authentication.BlacklistTokenService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 public class AuthController {
   private final AuthService authService;
+  private final BlacklistTokenService blacklistTokenService;
 
   @Operation(summary = "Đăng ký tài khoản")
   @PostMapping("/register")
@@ -88,8 +90,13 @@ public class AuthController {
   @Operation(summary = "Đăng xuất tài khoản")
   @PostMapping("/logout")
   public ResponseEntity<ApiResponse<Void>> logout(
+      @RequestHeader("Authorization") String token,
       @Valid @RequestBody RefreshTokenRequestDTO refreshTokenRequestDTO) {
     authService.logout(refreshTokenRequestDTO);
+    if (token != null && token.startsWith("Bearer ")) {
+      String accessToken = token.substring(7);
+      blacklistTokenService.addToBlacklist(accessToken);
+    } else throw new IllegalArgumentException("Invalid token format");
     return ResponseEntity.ok(ApiResponse.success(null));
   }
 

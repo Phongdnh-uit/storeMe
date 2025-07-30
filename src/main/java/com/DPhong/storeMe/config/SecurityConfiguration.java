@@ -3,6 +3,7 @@ package com.DPhong.storeMe.config;
 import com.DPhong.storeMe.constant.AppConstant;
 import com.DPhong.storeMe.enums.RoleName;
 import com.DPhong.storeMe.security.EnsureUserExistsFilter;
+import com.DPhong.storeMe.security.JwtBlacklistFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -48,7 +49,8 @@ public class SecurityConfiguration {
       HttpSecurity http,
       CustomAuthenticationEntryPoint authenticationEntryPoint,
       JwtAuthenticationConverter jwtAuthenticationConverter,
-      EnsureUserExistsFilter ensureUserExistsFilter)
+      EnsureUserExistsFilter ensureUserExistsFilter,
+      JwtBlacklistFilter jwtBlacklistFilter)
       throws Exception {
     http.csrf(AbstractHttpConfigurer::disable)
         .authorizeHttpRequests(
@@ -64,6 +66,7 @@ public class SecurityConfiguration {
                 oauth2
                     .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter))
                     .authenticationEntryPoint(authenticationEntryPoint))
+        .addFilterBefore(jwtBlacklistFilter, BearerTokenAuthenticationFilter.class)
         .addFilterAfter(ensureUserExistsFilter, BearerTokenAuthenticationFilter.class)
         .formLogin(AbstractHttpConfigurer::disable)
         .oauth2Login(
