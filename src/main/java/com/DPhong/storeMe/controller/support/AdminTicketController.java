@@ -3,14 +3,19 @@ package com.DPhong.storeMe.controller.support;
 import com.DPhong.storeMe.constant.AppConstant;
 import com.DPhong.storeMe.controller.GenericController;
 import com.DPhong.storeMe.dto.ApiResponse;
+import com.DPhong.storeMe.dto.PageResponse;
 import com.DPhong.storeMe.dto.support.AdminTicketRequestDTO;
 import com.DPhong.storeMe.dto.support.TicketCommentRequestDTO;
 import com.DPhong.storeMe.dto.support.TicketCommentResponseDTO;
 import com.DPhong.storeMe.dto.support.TicketResponseDTO;
 import com.DPhong.storeMe.entity.Ticket;
+import com.DPhong.storeMe.entity.TicketComment;
 import com.DPhong.storeMe.service.support.AdminTicketService;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -24,6 +29,14 @@ public class AdminTicketController
 
   public AdminTicketController(AdminTicketService service) {
     super(service);
+  }
+
+  @GetMapping("/{id}/comments")
+  public ResponseEntity<ApiResponse<PageResponse<TicketCommentResponseDTO>>> getTicketComments(
+      @PathVariable("id") Long id, Specification<TicketComment> spec, Pageable pageable) {
+    return ResponseEntity.ok(
+        ApiResponse.success(
+            ((AdminTicketService) service).getAllCommentInTicket(id, spec, pageable)));
   }
 
   @PostMapping("/{id}/comment")

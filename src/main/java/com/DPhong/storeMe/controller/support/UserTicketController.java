@@ -8,6 +8,7 @@ import com.DPhong.storeMe.dto.support.TicketCommentResponseDTO;
 import com.DPhong.storeMe.dto.support.TicketRequestDTO;
 import com.DPhong.storeMe.dto.support.TicketResponseDTO;
 import com.DPhong.storeMe.entity.Ticket;
+import com.DPhong.storeMe.entity.TicketComment;
 import com.DPhong.storeMe.service.support.UserTicketService;
 import com.turkraft.springfilter.boot.Filter;
 import jakarta.validation.Valid;
@@ -41,6 +42,13 @@ public class UserTicketController {
   @GetMapping("/{id}")
   public ResponseEntity<ApiResponse<TicketResponseDTO>> getById(@PathVariable("id") Long id) {
     return ResponseEntity.ok(ApiResponse.success(userTicketService.findById(id)));
+  }
+
+  @GetMapping("/{id}/comments")
+  public ResponseEntity<ApiResponse<PageResponse<TicketCommentResponseDTO>>> getTicketComments(
+      @PathVariable("id") Long id, Specification<TicketComment> spec, Pageable pageable) {
+    return ResponseEntity.ok(
+        ApiResponse.success(userTicketService.getAllCommentInTicket(id, spec, pageable)));
   }
 
   @PostMapping

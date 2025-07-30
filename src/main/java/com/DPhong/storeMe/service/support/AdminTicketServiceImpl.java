@@ -1,5 +1,6 @@
 package com.DPhong.storeMe.service.support;
 
+import com.DPhong.storeMe.dto.PageResponse;
 import com.DPhong.storeMe.dto.support.AdminTicketRequestDTO;
 import com.DPhong.storeMe.dto.support.TicketCommentRequestDTO;
 import com.DPhong.storeMe.dto.support.TicketCommentResponseDTO;
@@ -15,6 +16,9 @@ import com.DPhong.storeMe.repository.TicketRepository;
 import com.DPhong.storeMe.repository.UserRepository;
 import com.DPhong.storeMe.security.SecurityUtils;
 import com.DPhong.storeMe.service.GenericService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -58,7 +62,7 @@ public class AdminTicketServiceImpl
     }
   }
 
-  // ============================ ADD COMMENT ============================
+  // ============================ COMMENT ============================
   @Override
   public TicketCommentResponseDTO addCommentToTicket(
       Long ticketId, TicketCommentRequestDTO request) {
@@ -89,5 +93,15 @@ public class AdminTicketServiceImpl
       throw new ResourceNotFoundException("Comment not found");
     }
     ticketCommentRepository.deleteById(commentId);
+  }
+
+  @Override
+  public PageResponse<TicketCommentResponseDTO> getAllCommentInTicket(
+      Long ticketId, Specification<TicketComment> spec, Pageable pageable) {
+    Specification<TicketComment> specification =
+        (root, _, builder) -> builder.and(builder.equal(root.get("ticketId"), ticketId));
+    specification = specification.and(spec);
+    Page<TicketComment> page = ticketCommentRepository.findAll(specification, pageable);
+    return PageResponse.from(page.map(ticketCommentMapper::entityToResponse));
   }
 }

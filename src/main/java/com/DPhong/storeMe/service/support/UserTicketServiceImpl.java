@@ -19,6 +19,7 @@ import com.DPhong.storeMe.repository.UserRepository;
 import com.DPhong.storeMe.security.SecurityUtils;
 import com.DPhong.storeMe.service.GenericService;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -169,5 +170,22 @@ public class UserTicketServiceImpl
       throw new ResourceNotFoundException("Comment not found or does not belong to the user");
     }
     ticketCommentRepository.deleteById(commentId);
+  }
+
+  @Override
+  public PageResponse<TicketCommentResponseDTO> getAllCommentInTicket(
+      Long ticketId, Specification<TicketComment> spec, Pageable pageable) {
+    if (!repository.exists(
+        (root, _, builder) ->
+            builder.and(
+                builder.equal(root.get("id"), ticketId),
+                builder.equal(root.get("userId"), securityUtils.getCurrentUserId())))) {
+      throw new ResourceNotFoundException("Ticket not found or does not belong to the user");
+    }
+    Specification<TicketComment> specification =
+        (root, _, builder) -> builder.and(builder.equal(root.get("ticketId"), ticketId));
+    specification = specification.and(spec);
+    Page<TicketComment> page = ticketCommentRepository.findAll(specification, pageable);
+    return PageResponse.from(page.map(ticketCommentMapper::entityToResponse));
   }
 }
