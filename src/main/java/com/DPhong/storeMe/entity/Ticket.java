@@ -13,7 +13,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "support_tickets")
+@Table(name = "tickets")
 public class Ticket extends BaseEntity {
   @Column(nullable = false, length = 255)
   private String subject;
