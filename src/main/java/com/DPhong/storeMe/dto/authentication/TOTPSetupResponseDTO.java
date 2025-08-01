@@ -5,7 +5,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class TOTPResponseDTO {
+public class TOTPSetupResponseDTO {
   private String secret;
   private String qrCodeUrl;
 }

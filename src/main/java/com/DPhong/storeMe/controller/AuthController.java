@@ -8,7 +8,7 @@ import com.DPhong.storeMe.dto.authentication.LoginRequestDTO;
 import com.DPhong.storeMe.dto.authentication.RefreshTokenRequestDTO;
 import com.DPhong.storeMe.dto.authentication.RegisterRequestDTO;
 import com.DPhong.storeMe.dto.authentication.ResetPasswordRequestDTO;
-import com.DPhong.storeMe.dto.authentication.TOTPResponseDTO;
+import com.DPhong.storeMe.dto.authentication.TOTPSetupResponseDTO;
 import com.DPhong.storeMe.dto.authentication.UpdateAccountRequestDTO;
 import com.DPhong.storeMe.dto.user.UserResponseDTO;
 import com.DPhong.storeMe.service.authentication.AuthService;
@@ -116,7 +116,7 @@ public class AuthController {
 
   @Operation(summary = "Thiết lập xác thực hai yếu tố (2FA)")
   @PostMapping("/2fa/setup")
-  public ResponseEntity<ApiResponse<TOTPResponseDTO>> enableTwoFactorAuthentication() {
+  public ResponseEntity<ApiResponse<TOTPSetupResponseDTO>> enableTwoFactorAuthentication() {
     return ResponseEntity.ok(ApiResponse.success(authService.setupTOTP()));
   }
 }

@@ -59,4 +59,6 @@ public class User extends BaseEntity {
   @ManyToOne
   @JoinColumn(name = "role_id", nullable = false)
   private Role role;
+
+  private boolean is2FAEnabled = false;
 }
