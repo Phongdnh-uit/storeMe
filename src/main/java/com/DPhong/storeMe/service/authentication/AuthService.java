@@ -6,6 +6,7 @@ import com.DPhong.storeMe.dto.authentication.LoginRequestDTO;
 import com.DPhong.storeMe.dto.authentication.RefreshTokenRequestDTO;
 import com.DPhong.storeMe.dto.authentication.RegisterRequestDTO;
 import com.DPhong.storeMe.dto.authentication.ResetPasswordRequestDTO;
+import com.DPhong.storeMe.dto.authentication.TOTPResponseDTO;
 import com.DPhong.storeMe.dto.authentication.UpdateAccountRequestDTO;
 import com.DPhong.storeMe.dto.user.UserResponseDTO;
 
@@ -32,4 +33,6 @@ public interface AuthService {
   void resetPassword(ResetPasswordRequestDTO resetPasswordRequestDTO);
 
   UserResponseDTO updateAccount(UpdateAccountRequestDTO updateAccountRequestDTO);
+
+  TOTPResponseDTO setupTOTP();
 }
