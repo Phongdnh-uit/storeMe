@@ -4,6 +4,7 @@ import com.DPhong.storeMe.dto.ApiResponse;
 import com.DPhong.storeMe.dto.ErrorVO;
 import com.DPhong.storeMe.enums.ErrorCode;
 import com.DPhong.storeMe.service.authentication.BlacklistTokenService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,6 +20,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 public class JwtBlacklistFilter extends OncePerRequestFilter {
 
   private final BlacklistTokenService blacklistTokenService;
+  private final ObjectMapper objectMapper;
 
   @Override
   protected void doFilterInternal(
@@ -35,8 +37,10 @@ public class JwtBlacklistFilter extends OncePerRequestFilter {
         response.setStatus(HttpStatus.UNAUTHORIZED.value());
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
+        objectMapper.writeValue(response.getOutputStream(), apiResponse);
         return;
       }
     }
+    filterChain.doFilter(request, response);
   }
 }
