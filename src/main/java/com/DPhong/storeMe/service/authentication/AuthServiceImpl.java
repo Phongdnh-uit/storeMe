@@ -6,6 +6,7 @@ import com.DPhong.storeMe.dto.authentication.LoginRequestDTO;
 import com.DPhong.storeMe.dto.authentication.RefreshTokenRequestDTO;
 import com.DPhong.storeMe.dto.authentication.RegisterRequestDTO;
 import com.DPhong.storeMe.dto.authentication.ResetPasswordRequestDTO;
+import com.DPhong.storeMe.dto.authentication.TOTPResponseDTO;
 import com.DPhong.storeMe.dto.authentication.UpdateAccountRequestDTO;
 import com.DPhong.storeMe.dto.user.UserResponseDTO;
 import com.DPhong.storeMe.entity.RefreshToken;
@@ -13,6 +14,7 @@ import com.DPhong.storeMe.entity.User;
 import com.DPhong.storeMe.entity.Verification;
 import com.DPhong.storeMe.enums.UserStatus;
 import com.DPhong.storeMe.enums.VerificationType;
+import com.DPhong.storeMe.exception.ResourceNotFoundException;
 import com.DPhong.storeMe.mapper.UserMapper;
 import com.DPhong.storeMe.repository.UserRepository;
 import com.DPhong.storeMe.security.SecurityUtils;
@@ -41,6 +43,7 @@ public class AuthServiceImpl implements AuthService {
   private final SecurityUtils securityUtils;
   private final PasswordEncoder passwordEncoder;
   private final UserMapper userMapper;
+  private final GAService gaService;
 
   // ============================ REGISTER USER ============================
   @Override
@@ -198,5 +201,22 @@ public class AuthServiceImpl implements AuthService {
     user.setEmail(updateAccountRequestDTO.getEmail());
     user = userRepository.save(user);
     return userMapper.entityToResponse(user);
+  }
+
+  // ============================ SETUP TOTP ============================
+  @Override
+  public TOTPResponseDTO setupTOTP() {
+    Long userId = securityUtils.getCurrentUserId();
+    User user =
+        userRepository
+            .findById(userId)
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+    String secretKey = gaService.generateKey();
+    // TODO: Save secret key to user entity or a secure store
+    String qrCodeUrl = gaService.generateQRUrl(secretKey, user.getUsername());
+    TOTPResponseDTO totpResponseDTO = new TOTPResponseDTO();
+    totpResponseDTO.setSecret(secretKey);
+    totpResponseDTO.setQrCodeUrl(qrCodeUrl);
+    return totpResponseDTO;
   }
 }
