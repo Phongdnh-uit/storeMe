@@ -1,6 +1,5 @@
 package com.DPhong.storeMe.service.authentication;
 
-import com.DPhong.storeMe.constant.VerificationConstant;
 import com.DPhong.storeMe.entity.User;
 import com.DPhong.storeMe.entity.Verification;
 import com.DPhong.storeMe.enums.ErrorCode;
@@ -13,6 +12,8 @@ import com.DPhong.storeMe.repository.VerificationRepository;
 import java.time.Instant;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
@@ -28,36 +29,35 @@ public class VerificationServiceImpl implements VerificationService {
         userRepository
             .findById(userId)
             .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-    switch (user.getStatus()) {
-      case BLOCKED:
-        throw new AuthException(ErrorCode.USER_DISABLED);
-      case DELETED:
-        throw new AuthException(ErrorCode.USER_NOT_FOUND);
-      default:
-        break;
-    }
+
+    validateUserStatus(user);
 
     Verification verification = new Verification();
     verification.setUser(user);
     verification.setType(type);
     verification.setCode(UUID.randomUUID().toString());
-    verification.setExpiratedAt(
-        switch (type) {
-          case ACTIVATION ->
-              Instant.now().plusMillis(VerificationConstant.ACTIVATION_EXPIRATION_TIME);
-          case FORGOT_PASSWORD ->
-              Instant.now().plusMillis(VerificationConstant.FORGOT_PASSWORD_EXPIRATION_TIME);
-        });
+    verification.setExpiratedAt(Instant.now().plusSeconds(type.getExpirationTime()));
     return verificationRepository.save(verification);
   }
 
   @Override
   public Verification verifyCode(Long userId, String code, VerificationType type) {
+    Specification<Verification> specification =
+        (root, _, builder) ->
+            builder.and(
+                builder.equal(root.get("code"), code), builder.equal(root.get("type"), type));
+    // if !anonymous user, use userId to find verification
+    if (userId != null) {
+      specification =
+          specification.and(
+              (root, _, builder) -> builder.equal(root.get("user").get("id"), userId));
+    }
     Verification verification =
         verificationRepository
-            .findByUserIdAndCodeAndType(userId, code, type)
+            .findOne(specification)
             .orElseThrow(() -> new ResourceNotFoundException("Verification not found"));
     if (verification.getExpiratedAt().isBefore(Instant.now())) {
+      verificationRepository.delete(verification);
       throw new VerificationException("Verification code expired");
     } else {
       verificationRepository.delete(verification);
@@ -68,5 +68,24 @@ public class VerificationServiceImpl implements VerificationService {
   @Override
   public void deleteVerification(Verification verification) {
     verificationRepository.delete(verification);
+  }
+
+  @Scheduled(cron = "0 0 0 * * ?")
+  @Override
+  public void cronDeleteExpiredVerifications() {
+    verificationRepository.delete(
+        (root, _, builder) -> builder.lessThan(root.get("expiratedAt"), Instant.now()));
+  }
+
+  // ============================ HELPER METHODS ============================
+  void validateUserStatus(User user) {
+    switch (user.getStatus()) {
+      case BLOCKED:
+        throw new AuthException(ErrorCode.USER_DISABLED);
+      case DELETED:
+        throw new AuthException(ErrorCode.USER_NOT_FOUND);
+      default:
+        break;
+    }
   }
 }

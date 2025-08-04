@@ -11,6 +11,7 @@ import com.DPhong.storeMe.entity.Ticket;
 import com.DPhong.storeMe.entity.TicketComment;
 import com.DPhong.storeMe.service.support.UserTicketService;
 import com.turkraft.springfilter.boot.Filter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -26,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Tag(name = "User Ticket Management", description = "Quản lý vé hỗ trợ của người dùng")
 @RequiredArgsConstructor
 @RequestMapping(AppConstant.BASE_URL + "/support/tickets")
 @RestController

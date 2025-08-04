@@ -60,5 +60,6 @@ public class User extends BaseEntity {
   @JoinColumn(name = "role_id", nullable = false)
   private Role role;
 
+  @Column(name = "is_2fa_enabled", nullable = false)
   private boolean is2FAEnabled = false;
 }

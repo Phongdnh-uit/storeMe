@@ -48,6 +48,7 @@ public class DomainUserDetailService implements UserDetailsService {
         .password(userFromDatabase.getPasswordHash())
         .authorities(
             Set.of(new SimpleGrantedAuthority("ROLE_" + userFromDatabase.getRole().getName())))
+        .is2faEnabled(userFromDatabase.is2FAEnabled())
         .build();
   }
 }

@@ -29,6 +29,7 @@ public class SecurityConfiguration {
     BASE_URL + "/auth/forgot-password",
     BASE_URL + "/auth/reset-password",
     BASE_URL + "/oauth2/**",
+    BASE_URL + "/2fa/verify-totp",
     "/swagger-ui/**",
     "/v3/api-docs/**"
   };

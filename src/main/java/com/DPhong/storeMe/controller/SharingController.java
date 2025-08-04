@@ -1,5 +1,6 @@
 package com.DPhong.storeMe.controller;
 
+import com.DPhong.storeMe.constant.AppConstant;
 import com.DPhong.storeMe.dto.ApiResponse;
 import com.DPhong.storeMe.dto.PageResponse;
 import com.DPhong.storeMe.dto.sharing.CreateSharingRequestDTO;
@@ -8,6 +9,7 @@ import com.DPhong.storeMe.dto.sharing.UpdateSharingRequestDTO;
 import com.DPhong.storeMe.entity.Sharing;
 import com.DPhong.storeMe.service.fsNode.SharingService;
 import com.turkraft.springfilter.boot.Filter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
@@ -18,8 +20,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Tag(name = "Sharing", description = "Chia sẻ dữ liệu")
+@RequestMapping(AppConstant.BASE_URL)
 @RequiredArgsConstructor
 @RestController
 public class SharingController {

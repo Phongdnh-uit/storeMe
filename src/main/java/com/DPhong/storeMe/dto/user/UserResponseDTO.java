@@ -13,6 +13,7 @@ public class UserResponseDTO {
   private String email;
   private Long totalUsage;
   private UserStatus status;
+  private boolean is2FAEnabled;
   private Instant createdAt;
   private Instant updatedAt;
   private Long createdBy;

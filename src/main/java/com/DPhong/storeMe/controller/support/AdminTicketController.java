@@ -11,6 +11,7 @@ import com.DPhong.storeMe.dto.support.TicketResponseDTO;
 import com.DPhong.storeMe.entity.Ticket;
 import com.DPhong.storeMe.entity.TicketComment;
 import com.DPhong.storeMe.service.support.AdminTicketService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Tag(name = "Admin Ticket Management", description = "Quản lý vé hỗ trợ cho quản trị viên")
 @RequestMapping(AppConstant.BASE_URL + "/support/tickets/manage")
 @RestController
 public class AdminTicketController

@@ -1,36 +1,29 @@
 package com.DPhong.storeMe.service.authentication;
 
-import com.DPhong.storeMe.constant.RedisKey;
 import com.DPhong.storeMe.dto.authentication.AuthResponseDTO;
 import com.DPhong.storeMe.dto.authentication.ChangePasswordRequestDTO;
 import com.DPhong.storeMe.dto.authentication.LoginRequestDTO;
 import com.DPhong.storeMe.dto.authentication.RefreshTokenRequestDTO;
 import com.DPhong.storeMe.dto.authentication.RegisterRequestDTO;
 import com.DPhong.storeMe.dto.authentication.ResetPasswordRequestDTO;
-import com.DPhong.storeMe.dto.authentication.TOTPLoginRequestDTO;
-import com.DPhong.storeMe.dto.authentication.TOTPSetupResponseDTO;
-import com.DPhong.storeMe.dto.authentication.TOTPVerifySetupResponseDTO;
+import com.DPhong.storeMe.dto.authentication.TwoFAChallengeResponseDTO;
 import com.DPhong.storeMe.dto.authentication.UpdateAccountRequestDTO;
 import com.DPhong.storeMe.dto.user.UserResponseDTO;
 import com.DPhong.storeMe.entity.RefreshToken;
 import com.DPhong.storeMe.entity.User;
 import com.DPhong.storeMe.entity.User2FAMethod;
 import com.DPhong.storeMe.entity.Verification;
-import com.DPhong.storeMe.enums.ErrorCode;
-import com.DPhong.storeMe.enums.User2FAType;
 import com.DPhong.storeMe.enums.UserStatus;
 import com.DPhong.storeMe.enums.VerificationType;
-import com.DPhong.storeMe.exception.AuthException;
-import com.DPhong.storeMe.exception.ResourceNotFoundException;
 import com.DPhong.storeMe.mapper.UserMapper;
 import com.DPhong.storeMe.repository.User2FAMethodRepository;
 import com.DPhong.storeMe.repository.UserRepository;
+import com.DPhong.storeMe.security.CustomUserDetails;
 import com.DPhong.storeMe.security.SecurityUtils;
 import com.DPhong.storeMe.security.TokenProvider;
 import com.DPhong.storeMe.service.general.MailService;
 import com.DPhong.storeMe.service.user.UserService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.core.Authentication;
@@ -52,8 +45,6 @@ public class AuthServiceImpl implements AuthService {
   private final SecurityUtils securityUtils;
   private final PasswordEncoder passwordEncoder;
   private final UserMapper userMapper;
-  private final GAService gaService;
-  private final RedisTemplate<String, Object> redisTemplate;
   private final User2FAMethodRepository user2FAMethodRepository;
 
   // ============================ REGISTER USER ============================
@@ -72,7 +63,7 @@ public class AuthServiceImpl implements AuthService {
 
   // ============================ LOGIN ============================
   @Override
-  public AuthResponseDTO login(LoginRequestDTO loginRequestDTO) {
+  public Object login(LoginRequestDTO loginRequestDTO) {
     // 1. ---- Authenticate user ----
     UsernamePasswordAuthenticationToken authenticationToken =
         new UsernamePasswordAuthenticationToken(
@@ -85,6 +76,23 @@ public class AuthServiceImpl implements AuthService {
 
     // 3. ---- Generate access token and refresh token ----
     Long userId = securityUtils.getCurrentUserId();
+
+    // 4. ---- check if 2fa is enable ----
+    CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+    if (userDetails.is2faEnabled()) {
+      TwoFAChallengeResponseDTO twoFAChallengeResponseDTO = new TwoFAChallengeResponseDTO();
+      twoFAChallengeResponseDTO.setPendingCode(
+          verificationService
+              .createVerification(userId, VerificationType.TWO_FACTOR_AUTHENTICATION)
+              .getCode());
+      twoFAChallengeResponseDTO.setMethods(
+          user2FAMethodRepository
+              .findAll((root, _, builder) -> builder.and(builder.equal(root.get("userId"), userId)))
+              .stream()
+              .map(User2FAMethod::getType)
+              .toList());
+      return twoFAChallengeResponseDTO;
+    }
 
     String accessToken = tokenProvider.generateAccessToken(userId);
 
@@ -212,60 +220,5 @@ public class AuthServiceImpl implements AuthService {
     user.setEmail(updateAccountRequestDTO.getEmail());
     user = userRepository.save(user);
     return userMapper.entityToResponse(user);
-  }
-
-  // ============================ SETUP TOTP ============================
-  @Override
-  public TOTPSetupResponseDTO setupTOTP() {
-    Long userId = securityUtils.getCurrentUserId();
-    User user =
-        userRepository
-            .findById(userId)
-            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-    String secretKey = gaService.generateKey();
-    redisTemplate.opsForValue().set(RedisKey.TOTP_SETUP + userId, secretKey, 10 * 60L);
-    String qrCodeUrl = gaService.generateQRUrl(secretKey, user.getUsername());
-    TOTPSetupResponseDTO totpResponseDTO = new TOTPSetupResponseDTO();
-    totpResponseDTO.setSecret(secretKey);
-    totpResponseDTO.setQrCodeUrl(qrCodeUrl);
-    return totpResponseDTO;
-  }
-
-  // ============================ VERIFY TOTP SETUP ============================
-  @Override
-  public TOTPVerifySetupResponseDTO verifySetupTOTP(String code) {
-    Long userId = securityUtils.getCurrentUserId();
-    String secretKey = (String) redisTemplate.opsForValue().get(RedisKey.TOTP_SETUP + userId);
-    if (secretKey == null) {
-      throw new ResourceNotFoundException("TOTP setup not found or expired");
-    }
-    Integer codeInt = Integer.parseInt(code);
-    boolean isValid = gaService.isValid(secretKey, codeInt);
-    if (!isValid) {
-      throw new AuthException(ErrorCode.AUTH_FAILED, "Invalid TOTP code");
-    }
-    // Save TOTP method for user
-    // delete old
-    user2FAMethodRepository.delete(
-        (root, _, builder) ->
-            builder.and(
-                builder.equal(root.get("userId"), userId),
-                builder.equal(root.get("type"), User2FAType.TOTP)));
-    // save new
-    User2FAMethod user2FAMethod = new User2FAMethod();
-    user2FAMethod.setUserId(userId);
-    user2FAMethod.setType(User2FAType.TOTP);
-    user2FAMethod.setSecret(secretKey);
-    user2FAMethodRepository.save(user2FAMethod);
-    redisTemplate.delete(RedisKey.TOTP_SETUP + userId);
-    TOTPVerifySetupResponseDTO responseDTO = new TOTPVerifySetupResponseDTO();
-    // TODO: generate backup_code
-    return responseDTO;
-  }
-
-  @Override
-  public AuthResponseDTO verifyTOTP(TOTPLoginRequestDTO request) {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("Unimplemented method 'verifyTOTP'");
   }
 }

@@ -61,7 +61,8 @@ public class GlobalExceptionHandler {
     ErrorVO errorVO =
         ErrorVO.builder()
             .errorCode(ex.getErrorCode().getCode())
-            .errorMessage(ex.getErrorCode().getMessage())
+            .errorMessage(
+                ex.getMessage() != null ? ex.getMessage() : ex.getErrorCode().getMessage())
             .fieldErrors(ex.getFieldErrors())
             .build();
     return ResponseEntity.status(ex.getErrorCode().getHttpStatus())

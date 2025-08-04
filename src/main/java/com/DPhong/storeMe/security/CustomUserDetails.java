@@ -17,4 +17,6 @@ public class CustomUserDetails implements UserDetails {
   private final String username;
 
   private final Set<GrantedAuthority> authorities;
+
+  private boolean is2faEnabled;
 }

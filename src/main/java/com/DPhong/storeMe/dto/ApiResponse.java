@@ -24,7 +24,15 @@ public class ApiResponse<T> {
     return new ApiResponse<>(HttpStatus.OK.value(), "success", data, null);
   }
 
+  public static <T> ApiResponse<T> success(T data, String message) {
+    return new ApiResponse<>(HttpStatus.OK.value(), message, data, null);
+  }
+
   public static ApiResponse<Void> error(int code, ErrorVO error) {
     return new ApiResponse<>(code, "error", null, error);
+  }
+
+  public static ApiResponse<Void> error(int code, ErrorVO error, String message) {
+    return new ApiResponse<>(code, message, null, error);
   }
 }

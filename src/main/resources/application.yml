@@ -29,5 +29,5 @@ jwt:
   secret: cai-secretkey-nay-dung-de-test-thoi-khong-dung-thuc-te-va-yeu-cau-do-dai-secret-512bit
   # access-token-expiration: 3600000
   # refresh-token-expiration: 86400000
-  access-token-expiration: 60000 # 1 minute
-  refresh-token-expiration: 120000 # 2 minutes
+  access-token-expiration: 3600000 # 60 minute
+  refresh-token-expiration: 120000000 # 2 minutes

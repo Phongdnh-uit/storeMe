@@ -10,4 +10,6 @@ public interface VerificationService {
   Verification verifyCode(Long userId, String code, VerificationType type);
 
   void deleteVerification(Verification verification);
+
+  void cronDeleteExpiredVerifications();
 }
