@@ -3,11 +3,14 @@ package com.DPhong.storeMe.service.payment;
 import com.DPhong.storeMe.config.VNPayConfig;
 import com.DPhong.storeMe.dto.payment.VNPayPaymentRequestDTO;
 import com.DPhong.storeMe.entity.Invoice;
+import com.DPhong.storeMe.entity.StoragePlan;
 import com.DPhong.storeMe.enums.ErrorCode;
 import com.DPhong.storeMe.enums.InvoiceStatus;
+import com.DPhong.storeMe.enums.PaymentMethod;
 import com.DPhong.storeMe.exception.ApiException;
 import com.DPhong.storeMe.exception.ResourceNotFoundException;
 import com.DPhong.storeMe.repository.InvoiceRepository;
+import com.DPhong.storeMe.repository.StoragePlanRepository;
 import com.DPhong.storeMe.security.SecurityUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
@@ -15,6 +18,7 @@ import java.math.RoundingMode;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -25,13 +29,16 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.TimeZone;
 import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
 
 @RequiredArgsConstructor
+@Service
 public class PaymentServiceImpl implements PaymentService {
 
   private final VNPayConfig config;
   private final SecurityUtils securityUtils;
   private final InvoiceRepository invoiceRepository;
+  private final StoragePlanRepository storagePlanRepository;
 
   public String createVNPayPayment(
       VNPayPaymentRequestDTO request, HttpServletRequest servletRequest) {
@@ -44,8 +51,14 @@ public class PaymentServiceImpl implements PaymentService {
                     builder.and(
                         builder.equal(root.get("id"), request.getInvoiceId()),
                         builder.equal(root.get("userId"), userId),
-                        builder.or(builder.equal(root.get("status"), InvoiceStatus.PENDING))))
+                        builder.or(
+                            builder.equal(root.get("status"), InvoiceStatus.PENDING),
+                            builder.equal(root.get("status"), InvoiceStatus.FAILED))))
             .orElseThrow(() -> new ResourceNotFoundException("No invoice needs to be paid"));
+    if (invoice.getPaymentMethod() != PaymentMethod.VNPAY) {
+      throw new ApiException(
+          ErrorCode.VALIDATION_FAILED, "This invoice is not paid by VNPay payment method");
+    }
 
     String vnp_Version = "2.1.0";
     String vnp_Command = "pay";
@@ -224,12 +237,20 @@ public class PaymentServiceImpl implements PaymentService {
 
     if ("00".equals(vnpParams.get("vnp_ResponseCode"))) {
       invoiceOpt.get().setStatus(InvoiceStatus.PAID);
+      StoragePlan storagePlan =
+          storagePlanRepository
+              .findById(invoiceOpt.get().getPlanId())
+              .orElseThrow(() -> new ResourceNotFoundException("Storage plan not found"));
+      Instant now = Instant.now();
+      invoiceOpt.get().setPaidAt(now);
+      invoiceOpt.get().setPeriodStart(now);
+      invoiceOpt.get().setPeriodEnd(now.plusSeconds(storagePlan.getTimeOfPlan() * 24 * 60 * 60));
     } else {
       invoiceOpt.get().setStatus(InvoiceStatus.FAILED);
     }
+    invoiceRepository.save(invoiceOpt.get());
     response.put("RspCode", "00");
     response.put("Message", "Confirm Success");
-    invoiceRepository.save(invoiceOpt.get());
     return response;
   }
 }

@@ -1,6 +1,7 @@
 package com.DPhong.storeMe.entity;
 
 import com.DPhong.storeMe.enums.InvoiceStatus;
+import com.DPhong.storeMe.enums.PaymentMethod;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -41,5 +42,10 @@ public class Invoice extends BaseEntity {
   private Instant paidAt;
 
   @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
   private InvoiceStatus status;
+
+  @Enumerated(EnumType.STRING)
+  @Column(nullable = false)
+  private PaymentMethod paymentMethod;
 }

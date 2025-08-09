@@ -4,6 +4,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
@@ -21,7 +22,7 @@ public class StoragePlan extends BaseEntity {
   private String description;
 
   @Column(nullable = false)
-  private Double price;
+  private BigDecimal price;
 
   /** Count of days the plan is valid. */
   private Long timeOfPlan;
