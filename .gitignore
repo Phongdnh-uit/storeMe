@@ -41,3 +41,4 @@ out/
 application-dev.properties
 application-dev.yml
 
+.env
