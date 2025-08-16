@@ -16,6 +16,6 @@ public class Sharing extends BaseEntity {
   @Column(nullable = false)
   private Long grantedTo;
 
-  @Column(nullable = false)
+  @Column(name = "shared_fs_node", nullable = false)
   private Long sharedFSNode;
 }

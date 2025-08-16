@@ -13,6 +13,7 @@ public class PageResponse<T> {
   private List<T> content;
   private int totalPages;
   private long totalElements;
+  private long numberOfElements;
   private int size;
   private int number;
 
@@ -21,6 +22,7 @@ public class PageResponse<T> {
         .setContent(page.getContent())
         .setTotalPages(page.getTotalPages())
         .setTotalElements(page.getTotalElements())
+        .setNumberOfElements(page.getNumberOfElements())
         .setSize(page.getSize())
         .setNumber(page.getNumber());
   }
