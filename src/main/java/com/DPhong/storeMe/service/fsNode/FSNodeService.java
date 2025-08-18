@@ -3,6 +3,7 @@ package com.DPhong.storeMe.service.fsNode;
 import com.DPhong.storeMe.dto.PageResponse;
 import com.DPhong.storeMe.dto.fileSystemNode.CreateFolderRequestDTO;
 import com.DPhong.storeMe.dto.fileSystemNode.FSResponseDTO;
+import com.DPhong.storeMe.dto.fileSystemNode.TransferFSNodeRequestDTO;
 import com.DPhong.storeMe.dto.fileSystemNode.UpdateFSNodeRequestDTO;
 import com.DPhong.storeMe.dto.fileSystemNode.UploadFileRequestDTO;
 import com.DPhong.storeMe.entity.FSNode;
@@ -24,6 +25,8 @@ public interface FSNodeService {
   Resource getFile(Long id);
 
   FSResponseDTO update(Long id, UpdateFSNodeRequestDTO request);
+
+  FSResponseDTO transfer(Long id, TransferFSNodeRequestDTO request);
 
   void delete(Long id);
 

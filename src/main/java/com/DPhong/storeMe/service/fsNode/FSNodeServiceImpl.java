@@ -3,6 +3,7 @@ package com.DPhong.storeMe.service.fsNode;
 import com.DPhong.storeMe.dto.PageResponse;
 import com.DPhong.storeMe.dto.fileSystemNode.CreateFolderRequestDTO;
 import com.DPhong.storeMe.dto.fileSystemNode.FSResponseDTO;
+import com.DPhong.storeMe.dto.fileSystemNode.TransferFSNodeRequestDTO;
 import com.DPhong.storeMe.dto.fileSystemNode.UpdateFSNodeRequestDTO;
 import com.DPhong.storeMe.dto.fileSystemNode.UploadFileRequestDTO;
 import com.DPhong.storeMe.entity.FSNode;
@@ -256,7 +257,7 @@ public class FSNodeServiceImpl implements FSNodeService {
     return resource;
   }
 
-  // ============================ UPDATE FSNODE: RENAME, MOVE, COPY ============================
+  // ============================ UPDATE FSNODE: UPDATE METADATA ============================
   @Transactional
   @Override
   public FSResponseDTO update(Long id, UpdateFSNodeRequestDTO request) {
@@ -265,56 +266,61 @@ public class FSNodeServiceImpl implements FSNodeService {
     // 1.1 ---- Check if user has permission to update the item ----
     fsPermissionService.checkCanWrite(securityUtils.getCurrentUserId(), fsNode);
     //  2. ---- Handle in each case ----
+    List<FSNode> itemsInNode =
+        getItemInNode(fsNode.getParent() == null ? null : fsNode.getParent().getId());
+    if (itemsInNode.stream()
+        .anyMatch(item -> item.getName().equals(request.getName()) && !item.getId().equals(id))) {
+      throw new DataConflictException("File system node with this name already exists.");
+    }
+    fsNode.setName(request.getName());
+    // 2.1 ---- Update hidden and locked status if provided - Only owner can change this ----
+    if (fsNode.getUser().getId().equals(securityUtils.getCurrentUserId())) {
+      fsNode.setHidden(request.isHidden());
+      fsNode.setLocked(request.isLocked());
+    }
+    fsNode.setLastAccessed(Instant.now());
+    return fsNodeMapper.entityToResponse(repository.save(fsNode));
+  }
+
+  // ============================ TRANSFER FSNODE: MOVE, COPY ============================
+  @Transactional
+  @Override
+  public FSResponseDTO transfer(Long id, TransferFSNodeRequestDTO request) {
+    // 1. ---- Validate ----
+    FSNode fsNode = getItemById(id);
+    // 1.1 ---- Check if user has permission to update the item ----
+    fsPermissionService.checkCanWrite(securityUtils.getCurrentUserId(), fsNode);
+    FSNode destination =
+        request.getDestinationId() == null ? null : getParentFolder(request.getDestinationId());
+    // 1.2 ---- Check if user has permission to move/copy the item to destination folder ----
+    fsPermissionService.checkCanWrite(securityUtils.getCurrentUserId(), fsNode);
+    fsPermissionService.checkCanWrite(securityUtils.getCurrentUserId(), destination);
+    List<FSNode> itemsInTarget = getItemInNode(request.getDestinationId());
+    if (itemsInTarget.stream()
+        .anyMatch(
+            item ->
+                item.getName().equals(fsNode.getName()) && !item.getId().equals(fsNode.getId()))) {
+      throw new DataConflictException("File system node with this name already exists.");
+    }
+    final FSNode resultNode;
+    //  2. ---- Handle in each case ----
     switch (request.getAction()) {
-      case RENAME:
-        List<FSNode> itemsInNode =
-            getItemInNode(fsNode.getParent() == null ? null : fsNode.getParent().getId());
-        if (itemsInNode.stream()
-            .anyMatch(
-                item -> item.getName().equals(request.getName()) && !item.getId().equals(id))) {
-          throw new DataConflictException("File system node with this name already exists.");
-        }
-        fsNode.setName(request.getName());
-        fsNode.setLastAccessed(Instant.now());
-        return fsNodeMapper.entityToResponse(repository.save(fsNode));
       case MOVE:
         //  ---- Only move in same store space ----
-        FSNode moveTarget =
-            request.getParentId() == null ? null : getParentFolder(request.getParentId());
-        // 2.1 ---- Check if user has permission to copy the item to parent folder ----
-        if (moveTarget != null) {
-          fsPermissionService.checkCanWrite(securityUtils.getCurrentUserId(), moveTarget);
-          if (moveTarget.getUser().getId() != fsNode.getUser().getId()) {
-            throw new ApiException(ErrorCode.ACCESS_DENIED);
-          }
-        } else {
-          // If moveTarget is null, it means we are moving to root folder
-          if (fsNode.getUser().getId() != securityUtils.getCurrentUserId()) {
-            throw new ApiException(ErrorCode.ACCESS_DENIED);
-          }
+        if ((destination == null && fsNode.getUser().getId() != securityUtils.getCurrentUserId())
+            || (destination != null && destination.getUser().getId() != fsNode.getUser().getId())) {
+          throw new DataConflictException("Cannot move item to another workspace.");
         }
-        // Move item to another folder
-        fsNode = moveItem(fsNode, moveTarget);
-        return fsNodeMapper.entityToResponse(fsNode);
+        resultNode = moveItem(fsNode, destination);
+        break;
       case COPY:
-        FSNode copyTarget =
-            request.getParentId() == null ? null : getParentFolder(request.getParentId());
-        // 2.1 ---- Check if user has permission to copy the item to parent folder ----
-        if (copyTarget != null) {
-          fsPermissionService.checkCanWrite(securityUtils.getCurrentUserId(), copyTarget);
-        }
-        List<FSNode> itemsInTarget = getItemInNode(request.getParentId());
-        if (itemsInTarget.stream()
-            .anyMatch(
-                item -> item.getName().equals(request.getName()) && !item.getId().equals(id))) {
-          throw new DataConflictException("File system node with this name already exists.");
-        }
-        // Copy item to another folder
-        fsNode = copy(fsNode, copyTarget);
-        return fsNodeMapper.entityToResponse(fsNode);
+        resultNode = copy(fsNode, destination);
+        break;
+      default:
+        throw new UnsupportedOperationException(
+            "Action " + request.getAction() + " is not supported yet.");
     }
-    throw new UnsupportedOperationException(
-        "Action " + request.getAction() + " is not supported yet.");
+    return fsNodeMapper.entityToResponse(resultNode);
   }
 
   // ============================ DELETE ITEM ============================
@@ -556,30 +562,30 @@ public class FSNodeServiceImpl implements FSNodeService {
         + blobKey.substring(6);
   }
 
-  private FSNode moveItem(FSNode fsNode, FSNode parentFolder) {
-    if (fsNode.getParent() == parentFolder) {
-      return fsNode;
+  private FSNode moveItem(FSNode sourceNode, FSNode destinationNode) {
+    if (sourceNode.getParent() == destinationNode) {
+      return sourceNode; // No need to move if the source is already in the destination
     }
 
     // 1. ---- Check if parent is child of fsNode ----
-    if (parentFolder != null && fsNode.getAncestor().contains(parentFolder.getId())) {
+    if (destinationNode != null && destinationNode.getAncestor().contains(sourceNode.getId())) {
       throw new ApiException(ErrorCode.CYCLIC_FILE_DETECTED);
     }
 
     // 2. ---- Update fsNode's parent and ancestor ----
-    fsNode.setParent(parentFolder);
+    sourceNode.setParent(destinationNode);
     List<Long> newAncestor = new ArrayList<>();
-    if (parentFolder != null) {
-      newAncestor.addAll(parentFolder.getAncestor());
-      newAncestor.add(parentFolder.getId());
+    if (destinationNode != null) {
+      newAncestor.addAll(destinationNode.getAncestor());
+      newAncestor.add(destinationNode.getId());
     }
-    fsNode.setAncestor(newAncestor);
-    fsNode.setLastAccessed(Instant.now());
-    fsNode = repository.save(fsNode);
+    sourceNode.setAncestor(newAncestor);
+    sourceNode.setLastAccessed(Instant.now());
+    sourceNode = repository.save(sourceNode);
 
     // 3. ---- Update all sub-nodes' ancestor ----
-    Long fsNodeId = fsNode.getId();
-    List<FSNode> subNodes = getSubNodes(fsNode);
+    Long fsNodeId = sourceNode.getId();
+    List<FSNode> subNodes = getSubNodes(fsNodeId);
     subNodes.stream()
         .forEach(
             node -> {
@@ -588,93 +594,109 @@ public class FSNodeServiceImpl implements FSNodeService {
               node.getAncestor().addAll(0, newAncestor);
             });
     repository.saveAll(subNodes);
-    return fsNode;
+    return sourceNode;
   }
 
-  private FSNode copy(FSNode fsNode, FSNode parentFolder) {
-    if (fsNode.getParent() == parentFolder) {
-      return fsNode;
+  private FSNode copy(FSNode sourceNode, FSNode destinationNode) {
+    if (sourceNode.getParent() == destinationNode) {
+      return sourceNode; // No need to copy if the source is already in the destination
     }
     // 1. ---- Clone basic info ----
-    FSNode copiedNode = shallowCopyFSNode(fsNode);
-    copiedNode.setParent(parentFolder);
+    FSNode copiedRoot = shallowCopyFSNode(sourceNode);
+    copiedRoot.setParent(destinationNode);
+
+    // 1.1 ---- Rebuild ancestor ----
     List<Long> newAncestor = new ArrayList<>();
-    if (parentFolder != null) {
-      newAncestor.addAll(parentFolder.getAncestor());
-      newAncestor.add(parentFolder.getId());
+    if (destinationNode != null) {
+      newAncestor.addAll(destinationNode.getAncestor());
+      newAncestor.add(destinationNode.getId());
     }
-    copiedNode.setAncestor(newAncestor);
-    copiedNode.setLastAccessed(Instant.now());
-    copiedNode = repository.save(copiedNode);
+    copiedRoot.setAncestor(newAncestor);
+    copiedRoot.setLastAccessed(Instant.now());
+    copiedRoot = repository.save(copiedRoot);
 
     // 2. ---- Clone fileMetadata ----
-    if (fsNode.getFileMetadata() != null) {
-      FileMetadata metadata = cloneFileMetadata(fsNode.getFileMetadata());
-      metadata.setFile(copiedNode);
+    if (sourceNode.getFileMetadata() != null) {
+      FileMetadata metadata = cloneFileMetadata(sourceNode.getFileMetadata());
+      metadata.setFile(sourceNode);
       fileMetadataRepository.save(metadata);
     }
 
-    // 3. ---- Clone all sub-nodes ----
-    Long fsNodeId = fsNode.getId();
-    List<FSNode> subNodes = getSubNodes(fsNode);
-    // 4. ---- Prepare to copy sub-nodes ----
-    // Map to keep track of copied node IDs 1 - 1
-    Map<Long, Long> idMap = new HashMap<>();
+    // 3. ---- Get all sub-nodes in source node ----
+    List<FSNode> originalSubNodes = getSubNodes(sourceNode.getId());
 
-    Map<Long, FSNode> originalNodeMap =
-        subNodes.stream()
-            .collect(HashMap::new, (map, node) -> map.put(node.getId(), node), HashMap::putAll);
-    originalNodeMap.put(fsNode.getId(), fsNode);
+    // 4. ---- Data struct for copy ----
+    // old id -> new id mapping
+    Map<Long, Long> oldToNewIdMapping = new HashMap<>();
+    Map<Long, Long> newToOldIdMapping = new HashMap<>();
 
+    // copiedNodeMap
     Map<Long, FSNode> copiedNodeMap = new HashMap<>();
-    copiedNodeMap.put(copiedNode.getId(), copiedNode);
+    Map<Long, FSNode> originalNodeMap = new HashMap<>();
 
+    oldToNewIdMapping.put(sourceNode.getId(), copiedRoot.getId());
+    newToOldIdMapping.put(copiedRoot.getId(), sourceNode.getId());
+    copiedNodeMap.put(copiedRoot.getId(), copiedRoot);
+    originalNodeMap.put(sourceNode.getId(), sourceNode);
+
+    // List for copied nodes and metadata
     List<FSNode> copiedSubNodes = new ArrayList<>();
     List<FileMetadata> copiedMetadataList = new ArrayList<>();
-    for (FSNode subNode : subNodes) {
+
+    for (FSNode originalNode : originalSubNodes) {
       // Clone sub-node basic info
-      FSNode copiedSubNode = shallowCopyFSNode(subNode);
+      FSNode copiedSubNode = shallowCopyFSNode(originalNode);
       copiedSubNode = repository.save(copiedSubNode);
-      // Update the ID map 2-way
-      idMap.put(subNode.getId(), copiedSubNode.getId());
-      idMap.put(copiedSubNode.getId(), subNode.getId());
-      // Add to copied node map
+
+      //  map tracking
+      oldToNewIdMapping.put(originalNode.getId(), copiedSubNode.getId());
       copiedNodeMap.put(copiedSubNode.getId(), copiedSubNode);
       copiedSubNodes.add(copiedSubNode);
+
       // Clone file metadata if exists
-      if (subNode.getFileMetadata() != null) {
-        FileMetadata copiedMetadata = cloneFileMetadata(subNode.getFileMetadata());
+      if (originalNode.getFileMetadata() != null) {
+        FileMetadata copiedMetadata = cloneFileMetadata(originalNode.getFileMetadata());
         copiedMetadata.setFile(copiedSubNode);
         copiedMetadataList.add(copiedMetadata);
       }
     }
-    // assign parent & rebuild ancestor
+
+    // 5. ---- Rebuild ancestor for sub-nodes ----
     for (FSNode copiedSubNode : copiedSubNodes) {
       // Build ancestor
-      FSNode oldNode = originalNodeMap.get(idMap.get(copiedSubNode.getId()));
+      FSNode oldNode = originalNodeMap.get(newToOldIdMapping.get(copiedSubNode.getId()));
+      copiedSubNode.setParent(
+          copiedNodeMap.get(oldToNewIdMapping.get(oldNode.getParent().getId())));
       List<Long> newSubAncestor = new ArrayList<>(oldNode.getAncestor());
-      int index = newSubAncestor.indexOf(fsNodeId);
+      int index = newSubAncestor.indexOf(sourceNode.getId());
       if (index != -1) {
-        newSubAncestor.subList(0, index + 1).clear();
+        newSubAncestor.set(index, destinationNode.getId());
+        newSubAncestor.subList(0, index).clear();
         newSubAncestor.addAll(0, newAncestor);
       }
       for (int i = index + 1; i < newSubAncestor.size(); i++) {
-        Long oldId = newSubAncestor.get(i);
-        Long newId = idMap.get(oldId);
-        if (newId != null) {
-          newSubAncestor.set(i, newId);
+        Long newId = oldToNewIdMapping.get(newSubAncestor.get(i));
+        if (newId == null) {
+          throw new ApiException(
+              ErrorCode.DATA_INTEGRITY_VIOLATION,
+              "Ancestor ID " + newSubAncestor.get(i) + " not found in copied nodes.");
         }
+        newSubAncestor.set(i, newId);
       }
       copiedSubNode.setAncestor(newSubAncestor);
-      // Set parent
-      copiedSubNode.setParent(copiedNodeMap.get(newSubAncestor.getLast()));
+      // Post check ancestor
+      if (copiedSubNode.getAncestor().getLast() != copiedSubNode.getParent().getId()) {
+        throw new ApiException(
+            ErrorCode.DATA_INTEGRITY_VIOLATION,
+            "Ancestor of copied sub-node does not match its parent.");
+      }
     }
 
     // 4. ---- Save all copied nodes and metadata ----
     repository.saveAll(copiedSubNodes);
     fileMetadataRepository.saveAll(copiedMetadataList);
 
-    return copiedNode;
+    return copiedRoot;
   }
 
   private FileMetadata cloneFileMetadata(FileMetadata metadata) {
@@ -704,19 +726,16 @@ public class FSNodeServiceImpl implements FSNodeService {
     return repository.save(copiedNode);
   }
 
-  private List<FSNode> getSubNodes(FSNode fsNode) {
+  private List<FSNode> getSubNodes(Long fsNodeId) {
+    if (fsNodeId == null) {
+      throw new DataConflictException("fsNodeId cannot be null for sub-node retrieval.");
+    }
     return repository.findAll(
         (root, _, builder) -> {
           Expression<Integer> pos =
               builder.function(
-                  "array_position",
-                  Integer.class,
-                  root.get("ancestor"),
-                  builder.literal(fsNode.getId()));
-          return builder.and(
-              builder.greaterThan(pos, 0),
-              builder.equal(root.get("user").get("id"), securityUtils.getCurrentUserId()),
-              builder.isNull(root.get("deletedAt")));
+                  "array_position", Integer.class, root.get("ancestor"), builder.literal(fsNodeId));
+          return builder.and(builder.greaterThan(pos, 0), builder.isNull(root.get("deletedAt")));
         });
   }
 }

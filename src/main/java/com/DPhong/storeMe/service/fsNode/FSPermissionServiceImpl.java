@@ -8,6 +8,7 @@ import com.DPhong.storeMe.enums.SharingType;
 import com.DPhong.storeMe.exception.ApiException;
 import com.DPhong.storeMe.repository.SharingPermissionRepository;
 import com.DPhong.storeMe.repository.SharingRepository;
+import com.DPhong.storeMe.security.SecurityUtils;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -19,17 +20,15 @@ import org.springframework.stereotype.Service;
 public class FSPermissionServiceImpl implements FSPermissionService {
   private final SharingRepository sharingRepository;
   private final SharingPermissionRepository sharingPermissionRepository;
+  private final SecurityUtils securityUtils;
 
   // ============================ CHECK USER CAN READ ============================
   @Override
-  public void checkCanRead(Long userId, FSNode fsNodeId) {
-    if (fsNodeId.getUser().getId() == userId) {
+  public void checkCanRead(Long userId, FSNode fsNode) {
+    if (isThroughAccess(userId, fsNode)) {
       return;
     }
-    if (isLocked(fsNodeId)) {
-      throw new ApiException(ErrorCode.FSNODE_LOCKED);
-    }
-    Optional<Sharing> sharing = getSharedIfExists(userId, fsNodeId);
+    Optional<Sharing> sharing = getSharedIfExists(userId, fsNode);
     if (sharing.isEmpty()) {
       throw new ApiException(
           ErrorCode.ACCESS_DENIED, "You do not have permission to read this file");
@@ -49,14 +48,11 @@ public class FSPermissionServiceImpl implements FSPermissionService {
 
   // ============================ CHECK USER CAN WRITE ============================
   @Override
-  public void checkCanWrite(Long userId, FSNode fsNodeId) {
-    if (fsNodeId.getUser().getId() == userId) {
-      return; // Owner can always write
+  public void checkCanWrite(Long userId, FSNode fsNode) {
+    if (isThroughAccess(userId, fsNode)) {
+      return;
     }
-    if (isLocked(fsNodeId)) {
-      throw new ApiException(ErrorCode.FSNODE_LOCKED);
-    }
-    Optional<Sharing> sharing = getSharedIfExists(userId, fsNodeId);
+    Optional<Sharing> sharing = getSharedIfExists(userId, fsNode);
     if (sharing.isEmpty()) {
       throw new ApiException(
           ErrorCode.ACCESS_DENIED, "You do not have permission to write to this file");
@@ -76,14 +72,11 @@ public class FSPermissionServiceImpl implements FSPermissionService {
 
   // ============================ CHECK USER CAN DELETE ============================
   @Override
-  public void checkCanDelete(Long userId, FSNode fsNodeId) {
-    if (fsNodeId.getUser().getId() == userId) {
-      return; // Owner can always delete
+  public void checkCanDelete(Long userId, FSNode fsNode) {
+    if (isThroughAccess(userId, fsNode)) {
+      return;
     }
-    if (isLocked(fsNodeId)) {
-      throw new ApiException(ErrorCode.FSNODE_LOCKED);
-    }
-    Optional<Sharing> sharing = getSharedIfExists(userId, fsNodeId);
+    Optional<Sharing> sharing = getSharedIfExists(userId, fsNode);
     if (sharing.isEmpty()) {
       throw new ApiException(
           ErrorCode.ACCESS_DENIED, "You do not have permission to delete this file");
@@ -103,8 +96,19 @@ public class FSPermissionServiceImpl implements FSPermissionService {
 
   // ============================ HELPER METHOD ============================
 
-  boolean isLocked(FSNode fsNode) {
-    return fsNode.isLocked();
+  boolean isThroughAccess(Long userId, FSNode fsNode) {
+    // Only the owner can access the root node
+    if (fsNode == null && securityUtils.getCurrentUserId() == userId) {
+      return true;
+    }
+    // Owner can always access their own files
+    if (fsNode.getUser().getId() == userId) {
+      return true;
+    }
+    if (fsNode.isLocked()) {
+      throw new ApiException(ErrorCode.FSNODE_LOCKED);
+    }
+    return false;
   }
 
   List<SharingPermission> getSharingPermission(Long sharingId) {

@@ -5,6 +5,7 @@ import com.DPhong.storeMe.dto.ApiResponse;
 import com.DPhong.storeMe.dto.PageResponse;
 import com.DPhong.storeMe.dto.fileSystemNode.CreateFolderRequestDTO;
 import com.DPhong.storeMe.dto.fileSystemNode.FSResponseDTO;
+import com.DPhong.storeMe.dto.fileSystemNode.TransferFSNodeRequestDTO;
 import com.DPhong.storeMe.dto.fileSystemNode.UpdateFSNodeRequestDTO;
 import com.DPhong.storeMe.dto.fileSystemNode.UploadFileRequestDTO;
 import com.DPhong.storeMe.entity.FSNode;
@@ -93,6 +94,13 @@ public class FSNodeController {
     return ResponseEntity.ok(ApiResponse.success(fsNodeService.update(id, request)));
   }
 
+  @Operation(summary = "Chuyển một node trong hệ thống file sang một thư mục khác")
+  @PostMapping("/{id}/transfer")
+  public ResponseEntity<ApiResponse<FSResponseDTO>> transferNode(
+      @PathVariable("id") Long id, @RequestBody TransferFSNodeRequestDTO request) {
+    return ResponseEntity.ok(ApiResponse.success(fsNodeService.transfer(id, request)));
+  }
+
   @Operation(summary = "Xoá một node trong hệ thống file")
   @DeleteMapping("/{id}")
   public ResponseEntity<ApiResponse<Void>> deleteNode(@PathVariable("id") Long id) {
@@ -116,7 +124,7 @@ public class FSNodeController {
   }
 
   @Operation(summary = "Khôi phục một node đã xoá trong hệ thống file")
-  @PostMapping("/trash/restore/{id}")
+  @PostMapping("/trash/{id}/restore")
   public ResponseEntity<ApiResponse<Void>> restoreNode(@PathVariable("id") Long id) {
     fsNodeService.restore(id);
     return ResponseEntity.ok(ApiResponse.success(null));
