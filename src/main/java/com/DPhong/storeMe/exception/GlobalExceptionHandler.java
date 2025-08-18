@@ -19,7 +19,8 @@ public class GlobalExceptionHandler {
     ErrorVO errorVO =
         ErrorVO.builder()
             .errorCode(ex.getErrorCode().getCode())
-            .errorMessage(ex.getErrorCode().getMessage())
+            .errorMessage(
+                !ex.getMessage().isBlank() ? ex.getMessage() : ex.getErrorCode().getMessage())
             .fieldErrors(ex.getFieldErrors())
             .build();
     return ResponseEntity.status(ex.getErrorCode().getHttpStatus())
@@ -31,7 +32,8 @@ public class GlobalExceptionHandler {
     ErrorVO errorVO =
         ErrorVO.builder()
             .errorCode(ex.getErrorCode().getCode())
-            .errorMessage(ex.getErrorCode().getMessage())
+            .errorMessage(
+                !ex.getMessage().isBlank() ? ex.getMessage() : ex.getErrorCode().getMessage())
             .fieldErrors(ex.getFieldErrors())
             .build();
     return ResponseEntity.status(ex.getErrorCode().getHttpStatus())
@@ -62,7 +64,7 @@ public class GlobalExceptionHandler {
         ErrorVO.builder()
             .errorCode(ex.getErrorCode().getCode())
             .errorMessage(
-                ex.getMessage() != null ? ex.getMessage() : ex.getErrorCode().getMessage())
+                ex.getMessage().isBlank() ? ex.getErrorCode().getMessage() : ex.getMessage())
             .fieldErrors(ex.getFieldErrors())
             .build();
     return ResponseEntity.status(ex.getErrorCode().getHttpStatus())
@@ -86,7 +88,8 @@ public class GlobalExceptionHandler {
     ErrorVO errorVO =
         ErrorVO.builder()
             .errorCode(ErrorCode.UNEXPECTED_ERROR.getCode())
-            .errorMessage("An unexpected error occurred.")
+            .errorMessage(
+                !ex.getMessage().isBlank() ? ex.getMessage() : "An unexpected error occurred.")
             .build();
     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
         .body(ApiResponse.error(HttpStatus.INTERNAL_SERVER_ERROR.value(), errorVO));

@@ -87,9 +87,8 @@ public class SharingServiceImpl implements SharingService {
             (root, _, builder) ->
                 builder.and(
                     root.get("sharedFSNode").in(fsNode.getAncestor()),
-                    builder.equal(root.get("grantedBy").get("id"), currentUserId),
-                    builder.equal(
-                        root.get("grantedTo").get("id"), createSharingRequestDTO.getGrantedTo())));
+                    builder.equal(root.get("grantedBy"), currentUserId),
+                    builder.equal(root.get("grantedTo"), createSharingRequestDTO.getGrantedTo())));
     if (isShared) {
       throw new ApiException(
           ErrorCode.VALIDATION_FAILED,

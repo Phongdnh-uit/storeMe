@@ -1,6 +1,8 @@
 package com.DPhong.storeMe.dto.fileSystemNode;
 
 import com.DPhong.storeMe.entity.BaseEntity;
+import com.DPhong.storeMe.entity.FileMetadata;
+import com.DPhong.storeMe.enums.FSType;
 import java.time.Instant;
 import java.util.List;
 import lombok.Getter;
@@ -26,4 +28,8 @@ public class FSResponseDTO extends BaseEntity {
   private Instant lastAccessed;
 
   private Instant deletedAt;
+
+  private FSType type;
+
+  private FileMetadata fileMetadata;
 }
