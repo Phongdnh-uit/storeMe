@@ -8,15 +8,15 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 public @interface RoleBaseFilterSpecs {
-  FilterSpec[] value();
-}
+  FilterSpec[] specs();
 
-@Retention(RetentionPolicy.RUNTIME)
-@Target({})
-@interface FilterSpec {
-  String role();
+  @Retention(RetentionPolicy.RUNTIME)
+  @Target({})
+  public @interface FilterSpec {
+    String role();
 
-  String description();
+    String description() default "";
 
-  String filter();
+    String filter();
+  }
 }
