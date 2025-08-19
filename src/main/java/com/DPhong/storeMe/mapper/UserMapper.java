@@ -14,4 +14,8 @@ public interface UserMapper extends GenericMapper<User, UserRequestDTO, UserResp
   @Override
   @Mapping(target = "passwordHash", ignore = true)
   void partialUpdate(UserRequestDTO request, @MappingTarget User entity);
+
+  @Mapping(target = "roleName", source = "role.name")
+  @Override
+  UserResponseDTO entityToResponse(User entity);
 }

@@ -1,21 +1,14 @@
 package com.DPhong.storeMe.config;
 
-import com.DPhong.storeMe.util.RoleBasedAnnotationIntrospector;
-import com.fasterxml.jackson.databind.AnnotationIntrospector;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.MapperFeature;
+import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
 @Configuration
 public class JacksonConfiguration {
   @Bean
-  public ObjectMapper objectMapper(Jackson2ObjectMapperBuilder builder) {
-    ObjectMapper mapper = builder.createXmlMapper(false).build();
-    mapper.setAnnotationIntrospector(
-        AnnotationIntrospector.pair(
-            new RoleBasedAnnotationIntrospector(),
-            mapper.getSerializationConfig().getAnnotationIntrospector()));
-    return mapper;
+  public Jackson2ObjectMapperBuilderCustomizer jacksonCustomizer() {
+    return builder -> builder.featuresToEnable(MapperFeature.DEFAULT_VIEW_INCLUSION);
   }
 }

@@ -15,4 +15,17 @@ public enum RoleName {
     this.name = name;
     this.description = description;
   }
+
+  public static RoleName fromString(String name) {
+    if (name.startsWith("ROLE_")) {
+      name = name.substring(5);
+    }
+    for (RoleName role : RoleName.values()) {
+      if (role.name.equalsIgnoreCase(name)) {
+        return role;
+      }
+    }
+    throw new IllegalArgumentException(
+        "No enum constant " + RoleName.class.getCanonicalName() + "." + name);
+  }
 }

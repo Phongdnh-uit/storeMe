@@ -1,6 +1,8 @@
 package com.DPhong.storeMe.dto.user;
 
+import com.DPhong.storeMe.constant.View;
 import com.DPhong.storeMe.enums.UserStatus;
+import com.fasterxml.jackson.annotation.JsonView;
 import java.time.Instant;
 import lombok.Getter;
 import lombok.Setter;
@@ -18,4 +20,7 @@ public class UserResponseDTO {
   private Instant updatedAt;
   private Long createdBy;
   private Long updatedBy;
+
+  @JsonView(View.Admin.class)
+  private String roleName;
 }
