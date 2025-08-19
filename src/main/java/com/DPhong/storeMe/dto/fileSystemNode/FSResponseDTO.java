@@ -1,7 +1,6 @@
 package com.DPhong.storeMe.dto.fileSystemNode;
 
 import com.DPhong.storeMe.entity.BaseEntity;
-import com.DPhong.storeMe.entity.FileMetadata;
 import com.DPhong.storeMe.enums.FSType;
 import java.time.Instant;
 import java.util.List;
@@ -31,5 +30,5 @@ public class FSResponseDTO extends BaseEntity {
 
   private FSType type;
 
-  private FileMetadata fileMetadata;
+  private FileMetadataResponseDTO fileMetadata;
 }

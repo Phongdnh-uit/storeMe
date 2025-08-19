@@ -42,14 +42,14 @@ public class TikaAnalysis {
    */
   public static String getExtension(InputStream stream) {
     String mimeType = getMimeType(stream);
+    System.out.println("Detected MIME type: " + mimeType);
     MimeTypes mimeTypes = MimeTypes.getDefaultMimeTypes();
-    MimeType mime;
     try {
-      mime = mimeTypes.forName(mimeType);
+      MimeType mime = mimeTypes.forName(mimeType);
+      return mime.getExtension();
     } catch (MimeTypeException e) {
       throw new TikaAnalysisException("Error getting MIME type", e);
     }
-    return mime.getExtension();
   }
 
   /**

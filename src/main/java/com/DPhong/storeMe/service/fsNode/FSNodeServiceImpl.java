@@ -26,7 +26,6 @@ import com.DPhong.storeMe.service.general.TikaAnalysis;
 import com.DPhong.storeMe.service.userPlan.UserPlanService;
 import jakarta.persistence.criteria.Expression;
 import java.io.IOException;
-import java.io.InputStream;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,6 +35,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.apache.tika.io.TikaInputStream;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -206,10 +206,9 @@ public class FSNodeServiceImpl implements FSNodeService {
         fileNode.setAncestor(ancestor);
       }
       fileNode = repository.save(fileNode);
-      responseList.add(fsNodeMapper.entityToResponse(fileNode));
       // 4. ---- Add metadata ----
       FileMetadata metadata = new FileMetadata();
-      try (InputStream inputStream = file.getInputStream()) {
+      try (TikaInputStream inputStream = TikaInputStream.get(file.getInputStream())) {
         metadata.setMimeType(TikaAnalysis.getMimeType(inputStream));
         metadata.setExtension(TikaAnalysis.getExtension(inputStream));
       } catch (IOException e) {
@@ -218,10 +217,12 @@ public class FSNodeServiceImpl implements FSNodeService {
       metadata.setFile(fileNode);
       String blobKey = UUID.randomUUID().toString();
       metadata.setBlobKey(blobKey);
-      fileMetadataRepository.save(metadata);
+      metadata = fileMetadataRepository.save(metadata);
       // 5. ---- Save file to blob storage ----
       String path = generateBlobPath(blobKey);
       storageService.storeFile(path, file);
+      fileNode.setFileMetadata(metadata);
+      responseList.add(fsNodeMapper.entityToResponse(fileNode));
     }
     // 6. ---- Update user storage usage ----
     user.setTotalUsage(user.getTotalUsage() + totalSize);
