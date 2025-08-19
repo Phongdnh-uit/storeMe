@@ -8,6 +8,7 @@ import com.DPhong.storeMe.dto.authentication.LoginRequestDTO;
 import com.DPhong.storeMe.dto.authentication.RefreshTokenRequestDTO;
 import com.DPhong.storeMe.dto.authentication.RegisterRequestDTO;
 import com.DPhong.storeMe.dto.authentication.ResetPasswordRequestDTO;
+import com.DPhong.storeMe.dto.authentication.SendVerifyEmailRequestDTO;
 import com.DPhong.storeMe.dto.authentication.TwoFAChallengeResponseDTO;
 import com.DPhong.storeMe.dto.authentication.UpdateAccountRequestDTO;
 import com.DPhong.storeMe.dto.user.UserResponseDTO;
@@ -54,18 +55,19 @@ public class AuthController {
         ApiResponse.success(authService.refreshAccessToken(refreshTokenRequestDTO)));
   }
 
-  @Operation(summary = "Xác thực tài khoản")
-  @GetMapping("/verify-email")
-  public String verifyEmail(
-      @RequestParam("userId") Long userId, @RequestParam("code") String code) {
-    authService.verifyEmail(userId, code);
-    return "verify-email";
+  @Operation(summary = "Gửi lại email xác thực tài khoản")
+  @PostMapping("/registration/send-email")
+  public ResponseEntity<ApiResponse<Void>> sendEmail(
+      @Valid @RequestBody SendVerifyEmailRequestDTO request) {
+    authService.resendVerifyEmail(request);
+    return ResponseEntity.ok(ApiResponse.success(null));
   }
 
-  @Operation(summary = "Gửi lại email xác thực tài khoản")
-  @PostMapping("/registration/{userId}/send-email")
-  public ResponseEntity<ApiResponse<Void>> sendEmail(@PathVariable("userId") Long userId) {
-    authService.resendVerifyEmail(userId);
+  @Operation(summary = "Xác thực tài khoản")
+  @GetMapping("/verify-email")
+  public ResponseEntity<ApiResponse<Void>> verifyEmail(
+      @RequestParam("userId") Long userId, @RequestParam("code") String code) {
+    authService.verifyEmail(userId, code);
     return ResponseEntity.ok(ApiResponse.success(null));
   }
 

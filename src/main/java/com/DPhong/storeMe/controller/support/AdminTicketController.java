@@ -12,6 +12,7 @@ import com.DPhong.storeMe.entity.Ticket;
 import com.DPhong.storeMe.entity.TicketComment;
 import com.DPhong.storeMe.service.support.AdminTicketService;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
@@ -35,7 +36,9 @@ public class AdminTicketController
 
   @GetMapping("/{id}/comments")
   public ResponseEntity<ApiResponse<PageResponse<TicketCommentResponseDTO>>> getTicketComments(
-      @PathVariable("id") Long id, Specification<TicketComment> spec, Pageable pageable) {
+      @PathVariable("id") Long id,
+      Specification<TicketComment> spec,
+      @ParameterObject Pageable pageable) {
     return ResponseEntity.ok(
         ApiResponse.success(
             ((AdminTicketService) service).getAllCommentInTicket(id, spec, pageable)));

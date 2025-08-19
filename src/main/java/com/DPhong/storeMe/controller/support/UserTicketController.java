@@ -14,6 +14,7 @@ import com.turkraft.springfilter.boot.Filter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
@@ -36,7 +37,7 @@ public class UserTicketController {
 
   @GetMapping
   public ResponseEntity<ApiResponse<PageResponse<TicketResponseDTO>>> getAll(
-      @Filter Specification<Ticket> specification, Pageable pageable) {
+      @Filter Specification<Ticket> specification, @ParameterObject Pageable pageable) {
     return ResponseEntity.ok(
         ApiResponse.success(userTicketService.findAll(specification, pageable)));
   }
@@ -48,7 +49,9 @@ public class UserTicketController {
 
   @GetMapping("/{id}/comments")
   public ResponseEntity<ApiResponse<PageResponse<TicketCommentResponseDTO>>> getTicketComments(
-      @PathVariable("id") Long id, Specification<TicketComment> spec, Pageable pageable) {
+      @PathVariable("id") Long id,
+      @Filter Specification<TicketComment> spec,
+      @ParameterObject Pageable pageable) {
     return ResponseEntity.ok(
         ApiResponse.success(userTicketService.getAllCommentInTicket(id, spec, pageable)));
   }

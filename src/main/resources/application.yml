@@ -42,6 +42,9 @@ spring:
       mail.smtp.auth: true
       mail.smtp.starttls.enable: true
       mail.smtp.ssl.trust: smtp.gmail.com
+      mail.smtp.pool: true
+      mail.smtp.pool.size: 5
+      mail.smtp.pool.timeout: 30000
   security:
     oauth2:
       client:

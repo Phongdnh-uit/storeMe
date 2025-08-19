@@ -29,7 +29,6 @@ public class UserTicketServiceImpl
     extends GenericService<Ticket, TicketRequestDTO, TicketResponseDTO>
     implements UserTicketService {
 
-  private final UserRepository userRepository;
   private final SecurityUtils securityUtils;
   private final TicketCommentRepository ticketCommentRepository;
   private final TicketCommentMapper ticketCommentMapper;
@@ -42,12 +41,12 @@ public class UserTicketServiceImpl
       TicketCommentMapper ticketCommentMapper,
       UserRepository userRepository) {
     super(repository, mapper);
-    this.userRepository = userRepository;
     this.securityUtils = securityUtils;
     this.ticketCommentRepository = ticketCommentRepository;
     this.ticketCommentMapper = ticketCommentMapper;
   }
 
+  // ============================ FIND ALL ============================
   @Override
   public PageResponse<TicketResponseDTO> findAll(
       Specification<Ticket> specification, Pageable pageable) {
@@ -58,6 +57,7 @@ public class UserTicketServiceImpl
     return super.findAll(userSpec, pageable);
   }
 
+  // ============================ FIND BY ID ============================
   @Override
   public TicketResponseDTO findById(Long id) {
     Optional<Ticket> ticket =
@@ -67,31 +67,35 @@ public class UserTicketServiceImpl
                     criteriaBuilder.equal(root.get("id"), id),
                     criteriaBuilder.equal(root.get("userId"), securityUtils.getCurrentUserId())));
     if (ticket.isEmpty()) {
-      throw new ResourceNotFoundException(" ticket not found");
+      throw new ResourceNotFoundException("ticket not found");
     }
     return mapper.entityToResponse(ticket.get());
   }
 
+  // ============================ CREATE TICKET ============================
   @Override
-  protected void beforeCreateMapper(TicketRequestDTO request) {
-    validateUserExists(request.getUserId());
+  protected void afterCreateMapper(TicketRequestDTO request, Ticket entity) {
+    entity.setUserId(securityUtils.getCurrentUserId());
+    entity.setStatus(TicketStatus.OPEN);
   }
 
+  // ============================ UPDATE TICKET ============================
   @Override
   protected void beforeUpdateMapper(Long id, TicketRequestDTO request, Ticket oldEntity) {
     if (oldEntity.getStatus() != TicketStatus.OPEN) {
       throw new ApiException(
           ErrorCode.VALIDATION_FAILED, "Only tickets with status OPEN can be updated.");
     }
-    validateUserExists(request.getUserId());
   }
 
+  // ============================ DELETE ============================
   @Override
   public void delete(Long id) {
     throw new UnsupportedOperationException(
         "Delete operation is not supported for user support tickets.");
   }
 
+  // ============================ DELETE ALL ============================
   @Override
   public void deleteAllById(Iterable<Long> ids) {
     throw new UnsupportedOperationException(
@@ -115,13 +119,6 @@ public class UserTicketServiceImpl
     }
     ticket.setStatus(TicketStatus.CLOSED);
     repository.save(ticket);
-  }
-
-  // ============================ HELPER METHODS ============================
-  void validateUserExists(Long userId) {
-    if (!userRepository.existsById(userId)) {
-      throw new ResourceNotFoundException("User not found");
-    }
   }
 
   @Override

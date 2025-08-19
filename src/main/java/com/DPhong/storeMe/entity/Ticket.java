@@ -24,7 +24,7 @@ public class Ticket extends BaseEntity {
   private TicketType ticketType;
 
   @Column(nullable = false)
-  private PriorityLevel priority;
+  private PriorityLevel priority = PriorityLevel.UNASSIGNED;
 
   @Column(nullable = false)
   private TicketStatus status;

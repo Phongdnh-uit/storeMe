@@ -4,7 +4,6 @@ import com.DPhong.storeMe.dto.PageResponse;
 import com.DPhong.storeMe.dto.support.AdminTicketRequestDTO;
 import com.DPhong.storeMe.dto.support.TicketCommentRequestDTO;
 import com.DPhong.storeMe.dto.support.TicketCommentResponseDTO;
-import com.DPhong.storeMe.dto.support.TicketRequestDTO;
 import com.DPhong.storeMe.dto.support.TicketResponseDTO;
 import com.DPhong.storeMe.entity.Ticket;
 import com.DPhong.storeMe.entity.TicketComment;
@@ -56,7 +55,7 @@ public class AdminTicketServiceImpl
   }
 
   // ============================ HELPER METHODS ============================
-  void validateTicket(TicketRequestDTO request) {
+  void validateTicket(AdminTicketRequestDTO request) {
     if (!userRepository.existsById(request.getUserId())) {
       throw new ResourceNotFoundException("User not found");
     }

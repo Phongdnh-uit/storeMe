@@ -6,7 +6,7 @@ import lombok.Getter;
 public enum RoleName {
   USER("USER", "User role with basic permissions"),
   ADMIN("ADMIN", "Administrator role with elevated permissions"),
-  SUPERADMIN("SUPER_ADMIN", "System role with all permissions");
+  SUPER_ADMIN("SUPER_ADMIN", "System role with all permissions");
 
   private final String name;
   private final String description;

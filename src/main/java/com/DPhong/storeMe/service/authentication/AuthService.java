@@ -6,6 +6,7 @@ import com.DPhong.storeMe.dto.authentication.LoginRequestDTO;
 import com.DPhong.storeMe.dto.authentication.RefreshTokenRequestDTO;
 import com.DPhong.storeMe.dto.authentication.RegisterRequestDTO;
 import com.DPhong.storeMe.dto.authentication.ResetPasswordRequestDTO;
+import com.DPhong.storeMe.dto.authentication.SendVerifyEmailRequestDTO;
 import com.DPhong.storeMe.dto.authentication.UpdateAccountRequestDTO;
 import com.DPhong.storeMe.dto.user.UserResponseDTO;
 
@@ -25,7 +26,7 @@ public interface AuthService {
 
   void verifyEmail(Long userId, String code);
 
-  void resendVerifyEmail(Long userId);
+  void resendVerifyEmail(SendVerifyEmailRequestDTO request);
 
   void sendForgotPasswordEmail(String email);
 

@@ -44,7 +44,7 @@ public class DatabaseInitialize implements ApplicationRunner {
 
     Role superAdminRole =
         roleRepository
-            .findByName(RoleName.SUPERADMIN.getName())
+            .findByName(RoleName.SUPER_ADMIN.getName())
             .orElseThrow(() -> new IllegalArgumentException("SUPER ADMIN role not found."));
 
     if (superAdminRole.getUsers().isEmpty()) {
@@ -101,7 +101,7 @@ public class DatabaseInitialize implements ApplicationRunner {
     adminUser.setPasswordHash(passwordEncoder.encode(adminPassword));
     adminUser.setRole(
         roleRepository
-            .findByName(RoleName.SUPERADMIN.getName())
+            .findByName(RoleName.SUPER_ADMIN.getName())
             .orElseThrow(() -> new IllegalArgumentException("SUPER ADMIN role not found.")));
     adminUser.setStatus(UserStatus.ACTIVE);
     adminUser.setLoginProvider(LoginProvider.LOCAL);

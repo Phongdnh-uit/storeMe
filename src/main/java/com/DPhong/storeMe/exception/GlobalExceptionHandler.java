@@ -85,6 +85,13 @@ public class GlobalExceptionHandler {
 
   @ExceptionHandler(Exception.class)
   public ResponseEntity<ApiResponse<Void>> handleGenericException(Exception ex) {
+    Throwable cause = ex.getCause();
+    while (cause != null && cause.getCause() != null) {
+      cause = cause.getCause();
+    }
+    if (cause instanceof ApiException apiException) {
+      return handleApiException(apiException);
+    }
     ErrorVO errorVO =
         ErrorVO.builder()
             .errorCode(ErrorCode.UNEXPECTED_ERROR.getCode())

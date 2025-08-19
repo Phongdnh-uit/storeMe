@@ -12,4 +12,6 @@ public class AdminTicketRequestDTO extends TicketRequestDTO {
   @NotNull private PriorityLevel priority;
 
   @NotNull private TicketStatus status;
+
+  @NotNull private Long userId;
 }

@@ -28,6 +28,7 @@ public class SecurityConfiguration {
     BASE_URL + "/auth/verify-email",
     BASE_URL + "/auth/forgot-password",
     BASE_URL + "/auth/reset-password",
+    BASE_URL + "/auth/registration/send-email",
     BASE_URL + "/oauth2/**",
     BASE_URL + "/2fa/verify-totp",
     "/swagger-ui/**",
@@ -59,7 +60,7 @@ public class SecurityConfiguration {
                 auth.requestMatchers(whiteList)
                     .permitAll()
                     .requestMatchers(whiteListAdmin)
-                    .hasAnyRole(RoleName.SUPERADMIN.getName(), RoleName.ADMIN.getName())
+                    .hasAnyRole(RoleName.SUPER_ADMIN.getName(), RoleName.ADMIN.getName())
                     .anyRequest()
                     .authenticated())
         .oauth2ResourceServer(

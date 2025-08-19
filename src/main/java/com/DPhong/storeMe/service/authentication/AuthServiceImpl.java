@@ -6,6 +6,7 @@ import com.DPhong.storeMe.dto.authentication.LoginRequestDTO;
 import com.DPhong.storeMe.dto.authentication.RefreshTokenRequestDTO;
 import com.DPhong.storeMe.dto.authentication.RegisterRequestDTO;
 import com.DPhong.storeMe.dto.authentication.ResetPasswordRequestDTO;
+import com.DPhong.storeMe.dto.authentication.SendVerifyEmailRequestDTO;
 import com.DPhong.storeMe.dto.authentication.TwoFAChallengeResponseDTO;
 import com.DPhong.storeMe.dto.authentication.UpdateAccountRequestDTO;
 import com.DPhong.storeMe.dto.user.UserResponseDTO;
@@ -15,6 +16,7 @@ import com.DPhong.storeMe.entity.User2FAMethod;
 import com.DPhong.storeMe.entity.Verification;
 import com.DPhong.storeMe.enums.UserStatus;
 import com.DPhong.storeMe.enums.VerificationType;
+import com.DPhong.storeMe.exception.ResourceNotFoundException;
 import com.DPhong.storeMe.mapper.UserMapper;
 import com.DPhong.storeMe.repository.User2FAMethodRepository;
 import com.DPhong.storeMe.repository.UserRepository;
@@ -159,17 +161,21 @@ public class AuthServiceImpl implements AuthService {
 
   // ============================ RESEND VERIFY EMAIL ============================
   @Override
-  public void resendVerifyEmail(Long userId) {
+  public void resendVerifyEmail(SendVerifyEmailRequestDTO request) {
+    User user =
+        userRepository
+            .findByEmail(request.getEmail())
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     // 1. ---- Create new verification ----
     Verification verification =
-        verificationService.createVerification(userId, VerificationType.ACTIVATION);
+        verificationService.createVerification(user.getId(), VerificationType.ACTIVATION);
     // 2. ---- Delete old if exists ----
     verification.getUser().getVerifications().stream()
         .filter(
             v -> v.getType() == VerificationType.ACTIVATION && v.getId() != verification.getId())
         .forEach(verificationService::deleteVerification);
     mailService.sendActivationEmail(
-        verification.getUser().getEmail(), userId, verification.getCode());
+        verification.getUser().getEmail(), user.getId(), verification.getCode());
   }
 
   // ============================ SEND FORGOT PASSWORD EMAIL ============================
