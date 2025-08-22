@@ -25,7 +25,6 @@ public enum RoleName {
         return role;
       }
     }
-    throw new IllegalArgumentException(
-        "No enum constant " + RoleName.class.getCanonicalName() + "." + name);
+    return null;
   }
 }
