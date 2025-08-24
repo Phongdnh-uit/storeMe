@@ -41,6 +41,7 @@ public class TokenProvider {
             .subject(userId.toString())
             .claim("role", user.getRole().getName())
             .claim("username", user.getUsername())
+            .claim("email", user.getEmail())
             .claim("login_provider", user.getLoginProvider().toString())
             .issuedAt(now)
             .expiresAt(expiration)

@@ -2,23 +2,30 @@ package com.DPhong.storeMe.config;
 
 import com.DPhong.storeMe.constant.AppConstant;
 import com.DPhong.storeMe.enums.RoleName;
+import com.DPhong.storeMe.interceptor.PermissionInterceptor;
+import com.DPhong.storeMe.security.CustomJwtAuthenticationConverter;
 import com.DPhong.storeMe.security.EnsureUserExistsFilter;
 import com.DPhong.storeMe.security.JwtBlacklistFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @RequiredArgsConstructor
 @Configuration
-public class SecurityConfiguration {
+@EnableWebSecurity
+public class SecurityConfiguration implements WebMvcConfigurer {
+
+  private final PermissionInterceptor permissionInterceptor;
 
   private final String BASE_URL = AppConstant.BASE_URL;
   private final String[] whiteList = {
@@ -50,7 +57,7 @@ public class SecurityConfiguration {
   SecurityFilterChain securityFilterChain(
       HttpSecurity http,
       CustomAuthenticationEntryPoint authenticationEntryPoint,
-      JwtAuthenticationConverter jwtAuthenticationConverter,
+      CustomJwtAuthenticationConverter jwtAuthenticationConverter,
       EnsureUserExistsFilter ensureUserExistsFilter,
       JwtBlacklistFilter jwtBlacklistFilter)
       throws Exception {
@@ -84,5 +91,10 @@ public class SecurityConfiguration {
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .exceptionHandling(ex -> ex.authenticationEntryPoint(authenticationEntryPoint));
     return http.build();
+  }
+
+  @Override
+  public void addInterceptors(InterceptorRegistry registry) {
+    registry.addInterceptor(permissionInterceptor).addPathPatterns(BASE_URL + "/**");
   }
 }
