@@ -6,7 +6,7 @@ import com.DPhong.storeMe.dto.fileSystemNode.FSResponseDTO;
 import com.DPhong.storeMe.dto.fileSystemNode.TransferFSNodeRequestDTO;
 import com.DPhong.storeMe.dto.fileSystemNode.UpdateFSNodeRequestDTO;
 import com.DPhong.storeMe.dto.fileSystemNode.UploadFileRequestDTO;
-import com.DPhong.storeMe.entity.FSNode;
+import com.DPhong.storeMe.entity.fsNode.FSNode;
 import java.util.List;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Pageable;

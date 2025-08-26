@@ -1,5 +1,9 @@
-package com.DPhong.storeMe.entity;
+package com.DPhong.storeMe.entity.authentication;
 
+import com.DPhong.storeMe.entity.BaseEntity;
+import com.DPhong.storeMe.entity.plan.UserPlan;
+import com.DPhong.storeMe.entity.authorization.Role;
+import com.DPhong.storeMe.entity.fsNode.FSNode;
 import com.DPhong.storeMe.enums.LoginProvider;
 import com.DPhong.storeMe.enums.UserStatus;
 import jakarta.persistence.CascadeType;

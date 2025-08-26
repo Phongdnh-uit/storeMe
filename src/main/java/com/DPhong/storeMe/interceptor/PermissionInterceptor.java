@@ -1,7 +1,7 @@
 package com.DPhong.storeMe.interceptor;
 
-import com.DPhong.storeMe.entity.RolePermission;
-import com.DPhong.storeMe.entity.User;
+import com.DPhong.storeMe.entity.authorization.RolePermission;
+import com.DPhong.storeMe.entity.authentication.User;
 import com.DPhong.storeMe.enums.RoleName;
 import com.DPhong.storeMe.repository.PermissionRepository;
 import com.DPhong.storeMe.repository.RolePermissionRepository;

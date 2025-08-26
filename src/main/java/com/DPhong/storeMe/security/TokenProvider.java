@@ -1,6 +1,6 @@
 package com.DPhong.storeMe.security;
 
-import com.DPhong.storeMe.entity.User;
+import com.DPhong.storeMe.entity.authentication.User;
 import com.DPhong.storeMe.exception.ResourceNotFoundException;
 import com.DPhong.storeMe.repository.UserRepository;
 import java.time.Instant;

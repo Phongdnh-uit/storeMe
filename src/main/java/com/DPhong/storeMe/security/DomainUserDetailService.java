@@ -1,6 +1,6 @@
 package com.DPhong.storeMe.security;
 
-import com.DPhong.storeMe.entity.User;
+import com.DPhong.storeMe.entity.authentication.User;
 import com.DPhong.storeMe.enums.ErrorCode;
 import com.DPhong.storeMe.enums.LoginProvider;
 import com.DPhong.storeMe.exception.AuthException;

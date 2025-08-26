@@ -1,5 +1,6 @@
-package com.DPhong.storeMe.entity;
+package com.DPhong.storeMe.entity.authorization;
 
+import com.DPhong.storeMe.entity.BaseEntity;
 import com.DPhong.storeMe.enums.HttpMethod;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

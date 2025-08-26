@@ -1,6 +1,6 @@
 package com.DPhong.storeMe.service.authentication;
 
-import com.DPhong.storeMe.entity.Verification;
+import com.DPhong.storeMe.entity.authentication.Verification;
 import com.DPhong.storeMe.enums.VerificationType;
 
 public interface VerificationService {

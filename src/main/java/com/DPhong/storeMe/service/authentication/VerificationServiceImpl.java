@@ -1,7 +1,7 @@
 package com.DPhong.storeMe.service.authentication;
 
-import com.DPhong.storeMe.entity.User;
-import com.DPhong.storeMe.entity.Verification;
+import com.DPhong.storeMe.entity.authentication.User;
+import com.DPhong.storeMe.entity.authentication.Verification;
 import com.DPhong.storeMe.enums.ErrorCode;
 import com.DPhong.storeMe.enums.VerificationType;
 import com.DPhong.storeMe.exception.AuthException;

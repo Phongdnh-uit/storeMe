@@ -1,5 +1,7 @@
-package com.DPhong.storeMe.entity;
+package com.DPhong.storeMe.entity.fsNode;
 
+import com.DPhong.storeMe.entity.BaseEntity;
+import com.DPhong.storeMe.entity.authentication.User;
 import com.DPhong.storeMe.enums.FSType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

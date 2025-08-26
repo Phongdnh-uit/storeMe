@@ -1,6 +1,7 @@
-package com.DPhong.storeMe.security;
+package com.DPhong.storeMe.security.filter;
 
 import com.DPhong.storeMe.repository.UserRepository;
+import com.DPhong.storeMe.security.SecurityUtils;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

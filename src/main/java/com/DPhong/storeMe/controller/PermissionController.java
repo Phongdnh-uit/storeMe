@@ -3,7 +3,7 @@ package com.DPhong.storeMe.controller;
 import com.DPhong.storeMe.constant.AppConstant;
 import com.DPhong.storeMe.dto.permission.PermissionRequestDTO;
 import com.DPhong.storeMe.dto.permission.PermissionResponseDTO;
-import com.DPhong.storeMe.entity.Permission;
+import com.DPhong.storeMe.entity.authorization.Permission;
 import com.DPhong.storeMe.service.permission.PermissionService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.RequestMapping;

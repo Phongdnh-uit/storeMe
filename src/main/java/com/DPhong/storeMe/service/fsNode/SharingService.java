@@ -4,7 +4,7 @@ import com.DPhong.storeMe.dto.PageResponse;
 import com.DPhong.storeMe.dto.sharing.CreateSharingRequestDTO;
 import com.DPhong.storeMe.dto.sharing.SharingResponseDTO;
 import com.DPhong.storeMe.dto.sharing.UpdateSharingRequestDTO;
-import com.DPhong.storeMe.entity.Sharing;
+import com.DPhong.storeMe.entity.sharing.Sharing;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 

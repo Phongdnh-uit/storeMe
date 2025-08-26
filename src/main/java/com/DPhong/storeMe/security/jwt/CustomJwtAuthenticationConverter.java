@@ -1,10 +1,12 @@
-package com.DPhong.storeMe.security;
+package com.DPhong.storeMe.security.jwt;
 
-import com.DPhong.storeMe.entity.User;
+import com.DPhong.storeMe.entity.authentication.User;
 import com.DPhong.storeMe.repository.UserRepository;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
+
+import com.DPhong.storeMe.security.CustomUserDetails;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.authentication.AbstractAuthenticationToken;

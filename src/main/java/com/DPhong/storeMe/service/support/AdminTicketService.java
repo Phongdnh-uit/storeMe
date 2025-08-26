@@ -4,7 +4,7 @@ import com.DPhong.storeMe.dto.support.AdminTicketRequestDTO;
 import com.DPhong.storeMe.dto.support.TicketCommentRequestDTO;
 import com.DPhong.storeMe.dto.support.TicketCommentResponseDTO;
 import com.DPhong.storeMe.dto.support.TicketResponseDTO;
-import com.DPhong.storeMe.entity.Ticket;
+import com.DPhong.storeMe.entity.support.Ticket;
 import com.DPhong.storeMe.service.CrudService;
 
 public interface AdminTicketService

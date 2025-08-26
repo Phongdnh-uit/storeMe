@@ -3,7 +3,7 @@ package com.DPhong.storeMe.controller;
 import com.DPhong.storeMe.constant.AppConstant;
 import com.DPhong.storeMe.dto.storagePlan.StoragePlanRequestDTO;
 import com.DPhong.storeMe.dto.storagePlan.StoragePlanResponseDTO;
-import com.DPhong.storeMe.entity.StoragePlan;
+import com.DPhong.storeMe.entity.plan.StoragePlan;
 import com.DPhong.storeMe.service.storagePlan.StoragePlanService;
 
 import io.swagger.v3.oas.annotations.tags.Tag;

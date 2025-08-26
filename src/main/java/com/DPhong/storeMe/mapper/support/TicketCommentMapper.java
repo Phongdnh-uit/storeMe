@@ -2,7 +2,7 @@ package com.DPhong.storeMe.mapper.support;
 
 import com.DPhong.storeMe.dto.support.TicketCommentRequestDTO;
 import com.DPhong.storeMe.dto.support.TicketCommentResponseDTO;
-import com.DPhong.storeMe.entity.TicketComment;
+import com.DPhong.storeMe.entity.support.TicketComment;
 import com.DPhong.storeMe.mapper.GenericMapper;
 import org.mapstruct.Mapper;
 import org.mapstruct.ReportingPolicy;

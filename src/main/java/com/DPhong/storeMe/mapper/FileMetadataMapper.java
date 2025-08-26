@@ -1,7 +1,7 @@
 package com.DPhong.storeMe.mapper;
 
 import com.DPhong.storeMe.dto.fileSystemNode.FileMetadataResponseDTO;
-import com.DPhong.storeMe.entity.FileMetadata;
+import com.DPhong.storeMe.entity.fsNode.FileMetadata;
 import org.mapstruct.Mapper;
 import org.mapstruct.ReportingPolicy;
 

@@ -1,6 +1,6 @@
 package com.DPhong.storeMe.repository;
 
-import com.DPhong.storeMe.entity.UserPlan;
+import com.DPhong.storeMe.entity.plan.UserPlan;
 import org.springframework.stereotype.Repository;
 
 @Repository

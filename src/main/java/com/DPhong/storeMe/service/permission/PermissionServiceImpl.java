@@ -2,7 +2,7 @@ package com.DPhong.storeMe.service.permission;
 
 import com.DPhong.storeMe.dto.permission.PermissionRequestDTO;
 import com.DPhong.storeMe.dto.permission.PermissionResponseDTO;
-import com.DPhong.storeMe.entity.Permission;
+import com.DPhong.storeMe.entity.authorization.Permission;
 import com.DPhong.storeMe.exception.DataConflictException;
 import com.DPhong.storeMe.mapper.PermissionMapper;
 import com.DPhong.storeMe.repository.PermissionRepository;

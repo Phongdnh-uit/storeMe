@@ -1,7 +1,7 @@
-package com.DPhong.storeMe.security;
+package com.DPhong.storeMe.security.oauth2;
 
-import com.DPhong.storeMe.entity.AuthAccount;
-import com.DPhong.storeMe.entity.User;
+import com.DPhong.storeMe.entity.authentication.AuthAccount;
+import com.DPhong.storeMe.entity.authentication.User;
 import com.DPhong.storeMe.enums.ErrorCode;
 import com.DPhong.storeMe.enums.RoleName;
 import com.DPhong.storeMe.enums.UserStatus;
@@ -9,8 +9,8 @@ import com.DPhong.storeMe.exception.AuthException;
 import com.DPhong.storeMe.repository.AuthAccountRepository;
 import com.DPhong.storeMe.repository.RoleRepository;
 import com.DPhong.storeMe.repository.UserRepository;
-import com.DPhong.storeMe.security.oauth2.OAuth2UserInfo;
-import com.DPhong.storeMe.security.oauth2.OAuth2UserInfoFactory;
+import com.DPhong.storeMe.security.CustomUserDetails;
+
 import java.util.Collections;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;

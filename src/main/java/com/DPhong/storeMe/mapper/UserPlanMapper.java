@@ -2,7 +2,7 @@ package com.DPhong.storeMe.mapper;
 
 import com.DPhong.storeMe.dto.userPlan.UserPlanRequestDTO;
 import com.DPhong.storeMe.dto.userPlan.UserPlanResponseDTO;
-import com.DPhong.storeMe.entity.UserPlan;
+import com.DPhong.storeMe.entity.plan.UserPlan;
 import org.mapstruct.Mapper;
 import org.mapstruct.ReportingPolicy;
 

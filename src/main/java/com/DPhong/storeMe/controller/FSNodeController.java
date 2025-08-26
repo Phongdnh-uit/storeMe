@@ -8,7 +8,7 @@ import com.DPhong.storeMe.dto.fileSystemNode.FSResponseDTO;
 import com.DPhong.storeMe.dto.fileSystemNode.TransferFSNodeRequestDTO;
 import com.DPhong.storeMe.dto.fileSystemNode.UpdateFSNodeRequestDTO;
 import com.DPhong.storeMe.dto.fileSystemNode.UploadFileRequestDTO;
-import com.DPhong.storeMe.entity.FSNode;
+import com.DPhong.storeMe.entity.fsNode.FSNode;
 import com.DPhong.storeMe.service.fsNode.FSNodeService;
 import com.turkraft.springfilter.boot.Filter;
 import io.swagger.v3.oas.annotations.Operation;

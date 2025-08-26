@@ -1,4 +1,4 @@
-package com.DPhong.storeMe.entity;
+package com.DPhong.storeMe.entity.authorization;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;

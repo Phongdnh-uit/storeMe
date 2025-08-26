@@ -1,6 +1,6 @@
 package com.DPhong.storeMe.repository;
 
-import com.DPhong.storeMe.entity.RolePermission;
+import com.DPhong.storeMe.entity.authorization.RolePermission;
 import org.springframework.stereotype.Repository;
 
 @Repository

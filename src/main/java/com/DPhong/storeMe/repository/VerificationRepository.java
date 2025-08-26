@@ -1,6 +1,6 @@
 package com.DPhong.storeMe.repository;
 
-import com.DPhong.storeMe.entity.Verification;
+import com.DPhong.storeMe.entity.authentication.Verification;
 import org.springframework.stereotype.Repository;
 
 @Repository

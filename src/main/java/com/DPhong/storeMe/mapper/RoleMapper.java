@@ -2,7 +2,7 @@ package com.DPhong.storeMe.mapper;
 
 import com.DPhong.storeMe.dto.role.RoleRequestDTO;
 import com.DPhong.storeMe.dto.role.RoleResponseDTO;
-import com.DPhong.storeMe.entity.Role;
+import com.DPhong.storeMe.entity.authorization.Role;
 import org.mapstruct.Mapper;
 import org.mapstruct.ReportingPolicy;
 
