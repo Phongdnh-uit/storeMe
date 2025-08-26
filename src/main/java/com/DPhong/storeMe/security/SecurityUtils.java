@@ -22,7 +22,7 @@ public class SecurityUtils {
   }
 
   // ============================ HELPER METHOD ============================
-  private static CustomUserDetails getCurrentUserDetails() {
+  public static CustomUserDetails getCurrentUserDetails() {
     Authentication auth = SecurityContextHolder.getContext().getAuthentication();
     if (auth == null || !auth.isAuthenticated()) return null;
     Object principal = auth.getPrincipal();

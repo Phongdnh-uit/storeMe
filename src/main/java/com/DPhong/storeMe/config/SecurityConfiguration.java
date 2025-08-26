@@ -98,6 +98,6 @@ public class SecurityConfiguration implements WebMvcConfigurer {
 
   @Override
   public void addInterceptors(InterceptorRegistry registry) {
-    registry.addInterceptor(permissionInterceptor).addPathPatterns(BASE_URL + "/**");
+    registry.addInterceptor(permissionInterceptor).excludePathPatterns(whiteList);
   }
 }
