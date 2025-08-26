@@ -1,8 +1,8 @@
 package com.DPhong.storeMe.service.fsNode;
 
-import com.DPhong.storeMe.entity.FSNode;
-import com.DPhong.storeMe.entity.Sharing;
-import com.DPhong.storeMe.entity.SharingPermission;
+import com.DPhong.storeMe.entity.fsNode.FSNode;
+import com.DPhong.storeMe.entity.sharing.Sharing;
+import com.DPhong.storeMe.entity.sharing.SharingPermission;
 import com.DPhong.storeMe.enums.ErrorCode;
 import com.DPhong.storeMe.enums.SharingType;
 import com.DPhong.storeMe.exception.ApiException;

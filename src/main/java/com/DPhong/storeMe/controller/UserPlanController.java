@@ -5,7 +5,7 @@ import com.DPhong.storeMe.dto.ApiResponse;
 import com.DPhong.storeMe.dto.PageResponse;
 import com.DPhong.storeMe.dto.userPlan.UserPlanRequestDTO;
 import com.DPhong.storeMe.dto.userPlan.UserPlanResponseDTO;
-import com.DPhong.storeMe.entity.UserPlan;
+import com.DPhong.storeMe.entity.plan.UserPlan;
 import com.DPhong.storeMe.service.userPlan.UserPlanService;
 import com.turkraft.springfilter.boot.Filter;
 import io.swagger.v3.oas.annotations.Operation;

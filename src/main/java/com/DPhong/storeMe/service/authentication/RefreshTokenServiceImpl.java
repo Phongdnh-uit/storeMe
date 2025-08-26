@@ -1,6 +1,6 @@
 package com.DPhong.storeMe.service.authentication;
 
-import com.DPhong.storeMe.entity.RefreshToken;
+import com.DPhong.storeMe.entity.authentication.RefreshToken;
 import com.DPhong.storeMe.enums.ErrorCode;
 import com.DPhong.storeMe.exception.AuthException;
 import com.DPhong.storeMe.exception.ResourceNotFoundException;

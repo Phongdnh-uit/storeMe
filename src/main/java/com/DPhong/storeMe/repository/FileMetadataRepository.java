@@ -1,6 +1,6 @@
 package com.DPhong.storeMe.repository;
 
-import com.DPhong.storeMe.entity.FileMetadata;
+import com.DPhong.storeMe.entity.fsNode.FileMetadata;
 import org.springframework.stereotype.Repository;
 
 @Repository

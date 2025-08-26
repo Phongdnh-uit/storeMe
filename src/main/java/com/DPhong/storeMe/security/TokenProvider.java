@@ -1,6 +1,6 @@
 package com.DPhong.storeMe.security;
 
-import com.DPhong.storeMe.entity.User;
+import com.DPhong.storeMe.entity.authentication.User;
 import com.DPhong.storeMe.exception.ResourceNotFoundException;
 import com.DPhong.storeMe.repository.UserRepository;
 import java.time.Instant;
@@ -41,6 +41,7 @@ public class TokenProvider {
             .subject(userId.toString())
             .claim("role", user.getRole().getName())
             .claim("username", user.getUsername())
+            .claim("email", user.getEmail())
             .claim("login_provider", user.getLoginProvider().toString())
             .issuedAt(now)
             .expiresAt(expiration)

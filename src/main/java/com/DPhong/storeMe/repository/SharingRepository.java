@@ -1,6 +1,6 @@
 package com.DPhong.storeMe.repository;
 
-import com.DPhong.storeMe.entity.Sharing;
+import com.DPhong.storeMe.entity.sharing.Sharing;
 import java.time.Instant;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

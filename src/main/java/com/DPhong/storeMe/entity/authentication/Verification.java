@@ -1,7 +1,11 @@
-package com.DPhong.storeMe.entity;
+package com.DPhong.storeMe.entity.authentication;
 
+import com.DPhong.storeMe.entity.BaseEntity;
+import com.DPhong.storeMe.enums.VerificationType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
@@ -12,14 +16,17 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity
-@Table(name = "refresh_tokens")
-public class RefreshToken extends BaseEntity {
+@Table(name = "verifications")
+public class Verification extends BaseEntity {
 
   @Column(nullable = false)
-  private String token;
+  private String code;
 
   @Column(nullable = false)
   private Instant expiratedAt;
+
+  @Enumerated(EnumType.STRING)
+  private VerificationType type;
 
   @ManyToOne
   @JoinColumn(name = "user_id", nullable = false)

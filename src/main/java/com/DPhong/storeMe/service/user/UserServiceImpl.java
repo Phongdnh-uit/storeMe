@@ -6,8 +6,8 @@ import com.DPhong.storeMe.dto.authentication.ChangePasswordRequestDTO;
 import com.DPhong.storeMe.dto.authentication.RegisterRequestDTO;
 import com.DPhong.storeMe.dto.user.UserRequestDTO;
 import com.DPhong.storeMe.dto.user.UserResponseDTO;
-import com.DPhong.storeMe.entity.Role;
-import com.DPhong.storeMe.entity.User;
+import com.DPhong.storeMe.entity.authorization.Role;
+import com.DPhong.storeMe.entity.authentication.User;
 import com.DPhong.storeMe.enums.ErrorCode;
 import com.DPhong.storeMe.enums.LoginProvider;
 import com.DPhong.storeMe.enums.RoleName;
@@ -182,13 +182,6 @@ public class UserServiceImpl implements UserService {
                 builder.equal(root.get("email"), userRequestDTO.getEmail()),
                 builder.notEqual(root.get("id"), userId)))) {
       fieldErrors.add(FieldError.from("email", "Email đã tồn tại"));
-    }
-    if (userRepository.exists(
-        (root, _, builder) ->
-            builder.and(
-                builder.equal(root.get("username"), userRequestDTO.getUsername()),
-                builder.notEqual(root.get("id"), userId)))) {
-      fieldErrors.add(FieldError.from("username", "Username đã tồn tại"));
     }
     if (!fieldErrors.isEmpty()) {
       throw new DataConflictException(fieldErrors);

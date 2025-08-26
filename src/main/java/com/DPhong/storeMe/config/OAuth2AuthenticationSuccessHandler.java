@@ -1,7 +1,7 @@
 package com.DPhong.storeMe.config;
 
 import com.DPhong.storeMe.dto.authentication.AuthResponseDTO;
-import com.DPhong.storeMe.entity.User;
+import com.DPhong.storeMe.entity.authentication.User;
 import com.DPhong.storeMe.enums.LoginProvider;
 import com.DPhong.storeMe.enums.RoleName;
 import com.DPhong.storeMe.enums.UserStatus;

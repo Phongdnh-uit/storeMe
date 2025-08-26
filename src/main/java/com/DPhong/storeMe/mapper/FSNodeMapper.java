@@ -1,7 +1,7 @@
 package com.DPhong.storeMe.mapper;
 
 import com.DPhong.storeMe.dto.fileSystemNode.FSResponseDTO;
-import com.DPhong.storeMe.entity.FSNode;
+import com.DPhong.storeMe.entity.fsNode.FSNode;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.ReportingPolicy;

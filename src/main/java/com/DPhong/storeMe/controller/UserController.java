@@ -5,7 +5,7 @@ import com.DPhong.storeMe.dto.ApiResponse;
 import com.DPhong.storeMe.dto.PageResponse;
 import com.DPhong.storeMe.dto.user.UserRequestDTO;
 import com.DPhong.storeMe.dto.user.UserResponseDTO;
-import com.DPhong.storeMe.entity.User;
+import com.DPhong.storeMe.entity.authentication.User;
 import com.DPhong.storeMe.enums.UserStatus;
 import com.DPhong.storeMe.service.user.UserService;
 import com.turkraft.springfilter.boot.Filter;

@@ -1,4 +1,4 @@
-package com.DPhong.storeMe.entity;
+package com.DPhong.storeMe.entity.sharing;
 
 import com.DPhong.storeMe.enums.SharingType;
 import jakarta.persistence.Column;

@@ -6,7 +6,7 @@ import com.DPhong.storeMe.dto.PageResponse;
 import com.DPhong.storeMe.dto.sharing.CreateSharingRequestDTO;
 import com.DPhong.storeMe.dto.sharing.SharingResponseDTO;
 import com.DPhong.storeMe.dto.sharing.UpdateSharingRequestDTO;
-import com.DPhong.storeMe.entity.Sharing;
+import com.DPhong.storeMe.entity.sharing.Sharing;
 import com.DPhong.storeMe.service.fsNode.SharingService;
 import com.turkraft.springfilter.boot.Filter;
 import io.swagger.v3.oas.annotations.tags.Tag;

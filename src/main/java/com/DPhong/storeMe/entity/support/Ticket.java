@@ -1,5 +1,6 @@
-package com.DPhong.storeMe.entity;
+package com.DPhong.storeMe.entity.support;
 
+import com.DPhong.storeMe.entity.BaseEntity;
 import com.DPhong.storeMe.enums.PriorityLevel;
 import com.DPhong.storeMe.enums.TicketStatus;
 import com.DPhong.storeMe.enums.TicketType;

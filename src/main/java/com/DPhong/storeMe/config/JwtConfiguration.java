@@ -1,9 +1,7 @@
-package com.DPhong.storeMe.security;
+package com.DPhong.storeMe.config;
 
 import static com.DPhong.storeMe.security.TokenProvider.*;
 
-import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.jwk.OctetSequenceKey;
 import com.nimbusds.jose.jwk.source.ImmutableSecret;
 import com.nimbusds.jose.util.Base64;
 import javax.crypto.SecretKey;
@@ -15,7 +13,6 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtEncoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtEncoder;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 
 @Configuration
@@ -25,10 +22,6 @@ public class JwtConfiguration {
 
   @Bean
   public JwtEncoder jwtEncoder() {
-    OctetSequenceKey jwk =
-        new OctetSequenceKey.Builder(getSecretKey().getEncoded())
-            .algorithm(JWSAlgorithm.HS512)
-            .build();
     return new NimbusJwtEncoder(new ImmutableSecret<>(getSecretKey()));
   }
 
@@ -42,15 +35,12 @@ public class JwtConfiguration {
   }
 
   @Bean
-  public JwtAuthenticationConverter jwtAuthenticationConverter() {
+  public JwtGrantedAuthoritiesConverter jwtGrantedAuthoritiesConverter() {
     JwtGrantedAuthoritiesConverter grantedAuthoritiesConverter =
         new JwtGrantedAuthoritiesConverter();
     grantedAuthoritiesConverter.setAuthorityPrefix("ROLE_");
     grantedAuthoritiesConverter.setAuthoritiesClaimName("role");
-
-    JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
-    jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);
-    return jwtAuthenticationConverter;
+    return grantedAuthoritiesConverter;
   }
 
   private SecretKey getSecretKey() {

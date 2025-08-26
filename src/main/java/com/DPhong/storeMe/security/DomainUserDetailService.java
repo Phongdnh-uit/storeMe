@@ -1,6 +1,6 @@
 package com.DPhong.storeMe.security;
 
-import com.DPhong.storeMe.entity.User;
+import com.DPhong.storeMe.entity.authentication.User;
 import com.DPhong.storeMe.enums.ErrorCode;
 import com.DPhong.storeMe.enums.LoginProvider;
 import com.DPhong.storeMe.exception.AuthException;
@@ -44,7 +44,7 @@ public class DomainUserDetailService implements UserDetailsService {
     }
     return CustomUserDetails.builder()
         .id(userFromDatabase.getId())
-        .username(userFromDatabase.getEmail())
+        .email(userFromDatabase.getEmail())
         .password(userFromDatabase.getPasswordHash())
         .authorities(
             Set.of(new SimpleGrantedAuthority("ROLE_" + userFromDatabase.getRole().getName())))

@@ -1,6 +1,6 @@
 package com.DPhong.storeMe.service.fsNode;
 
-import com.DPhong.storeMe.entity.FSNode;
+import com.DPhong.storeMe.entity.fsNode.FSNode;
 
 public interface FSPermissionService {
   void checkCanRead(Long userId, FSNode fsNodeId);

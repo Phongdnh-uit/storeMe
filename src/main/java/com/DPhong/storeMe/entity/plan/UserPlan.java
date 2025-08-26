@@ -1,5 +1,7 @@
-package com.DPhong.storeMe.entity;
+package com.DPhong.storeMe.entity.plan;
 
+import com.DPhong.storeMe.entity.BaseEntity;
+import com.DPhong.storeMe.entity.authentication.User;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;

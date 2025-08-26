@@ -4,7 +4,7 @@ import com.DPhong.storeMe.constant.AppConstant;
 import com.DPhong.storeMe.dto.ApiResponse;
 import com.DPhong.storeMe.dto.role.RoleRequestDTO;
 import com.DPhong.storeMe.dto.role.RoleResponseDTO;
-import com.DPhong.storeMe.entity.Role;
+import com.DPhong.storeMe.entity.authorization.Role;
 import com.DPhong.storeMe.service.role.RoleService;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;

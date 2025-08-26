@@ -2,7 +2,7 @@ package com.DPhong.storeMe.service.storagePlan;
 
 import com.DPhong.storeMe.dto.storagePlan.StoragePlanRequestDTO;
 import com.DPhong.storeMe.dto.storagePlan.StoragePlanResponseDTO;
-import com.DPhong.storeMe.entity.StoragePlan;
+import com.DPhong.storeMe.entity.plan.StoragePlan;
 import com.DPhong.storeMe.exception.DataConflictException;
 import com.DPhong.storeMe.mapper.GenericMapper;
 import com.DPhong.storeMe.repository.SimpleRepository;

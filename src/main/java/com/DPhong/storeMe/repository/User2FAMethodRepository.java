@@ -1,6 +1,6 @@
 package com.DPhong.storeMe.repository;
 
-import com.DPhong.storeMe.entity.User2FAMethod;
+import com.DPhong.storeMe.entity.authentication.User2FAMethod;
 import org.springframework.stereotype.Repository;
 
 @Repository
