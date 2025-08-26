@@ -4,6 +4,7 @@ import com.DPhong.storeMe.constant.AppConstant;
 import com.DPhong.storeMe.enums.RoleName;
 import com.DPhong.storeMe.interceptor.PermissionInterceptor;
 import com.DPhong.storeMe.security.CustomJwtAuthenticationConverter;
+import com.DPhong.storeMe.security.CustomOAuth2UserService;
 import com.DPhong.storeMe.security.EnsureUserExistsFilter;
 import com.DPhong.storeMe.security.JwtBlacklistFilter;
 import lombok.RequiredArgsConstructor;
@@ -58,6 +59,7 @@ public class SecurityConfiguration implements WebMvcConfigurer {
       HttpSecurity http,
       CustomAuthenticationEntryPoint authenticationEntryPoint,
       CustomJwtAuthenticationConverter jwtAuthenticationConverter,
+      CustomOAuth2UserService customOAuth2UserService,
       EnsureUserExistsFilter ensureUserExistsFilter,
       JwtBlacklistFilter jwtBlacklistFilter)
       throws Exception {
@@ -86,6 +88,7 @@ public class SecurityConfiguration implements WebMvcConfigurer {
                     .redirectionEndpoint(
                         endpoint ->
                             endpoint.baseUri(BASE_URL + "/oauth2/callback/{registrationId}"))
+                    .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
                     .successHandler(oauth2AuthenticationSuccessHandler))
         .sessionManagement(
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

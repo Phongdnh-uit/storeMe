@@ -1,14 +1,16 @@
 package com.DPhong.storeMe.security;
 
+import java.util.Map;
 import java.util.Set;
 import lombok.Builder;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 
 @Builder
 @Getter
-public class CustomUserDetails implements UserDetails {
+public class CustomUserDetails implements UserDetails, OAuth2User {
 
   private final Long id;
 
@@ -17,6 +19,8 @@ public class CustomUserDetails implements UserDetails {
   private final String email;
 
   private final Set<? extends GrantedAuthority> authorities;
+
+  private final Map<String, Object> attributes;
 
   @Override
   public String getUsername() {
@@ -43,5 +47,10 @@ public class CustomUserDetails implements UserDetails {
   @Override
   public boolean isEnabled() {
     return true;
+  }
+
+  @Override
+  public String getName() {
+    return String.valueOf(id);
   }
 }

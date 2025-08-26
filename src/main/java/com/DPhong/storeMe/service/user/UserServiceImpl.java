@@ -183,13 +183,6 @@ public class UserServiceImpl implements UserService {
                 builder.notEqual(root.get("id"), userId)))) {
       fieldErrors.add(FieldError.from("email", "Email đã tồn tại"));
     }
-    if (userRepository.exists(
-        (root, _, builder) ->
-            builder.and(
-                builder.equal(root.get("username"), userRequestDTO.getUsername()),
-                builder.notEqual(root.get("id"), userId)))) {
-      fieldErrors.add(FieldError.from("username", "Username đã tồn tại"));
-    }
     if (!fieldErrors.isEmpty()) {
       throw new DataConflictException(fieldErrors);
     }

@@ -24,7 +24,7 @@ import lombok.experimental.Accessors;
 @Table(name = "users")
 public class User extends BaseEntity {
 
-  @Column(nullable = false, unique = true)
+  @Column(nullable = false)
   private String username;
 
   @Column(nullable = false, unique = true)
