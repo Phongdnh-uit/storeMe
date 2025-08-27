@@ -1,4 +1,4 @@
-package com.DPhong.storeMe.entity;
+package com.DPhong.storeMe.entity.tag;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

@@ -1,5 +1,6 @@
-package com.DPhong.storeMe.entity;
+package com.DPhong.storeMe.entity.tag;
 
+import com.DPhong.storeMe.entity.BaseEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
@@ -18,6 +19,4 @@ public class Tag extends BaseEntity {
 
   @Column(nullable = false)
   private Long ownerId;
-
-  private boolean isSystem = false;
 }
