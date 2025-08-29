@@ -1,0 +1,13 @@
+CREATE TABLE IF NOT EXISTS backup_codes (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    code VARCHAR(255) NOT NULL,
+    version BIGINT NOT NULL DEFAULT 1,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_by BIGINT,
+    updated_by BIGINT,
+
+    -- constraints
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);

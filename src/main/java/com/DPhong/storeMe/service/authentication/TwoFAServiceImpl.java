@@ -5,6 +5,7 @@ import com.DPhong.storeMe.dto.authentication.AuthResponseDTO;
 import com.DPhong.storeMe.dto.authentication.TOTPLoginRequestDTO;
 import com.DPhong.storeMe.dto.authentication.TOTPSetupResponseDTO;
 import com.DPhong.storeMe.dto.authentication.TOTPVerifySetupResponseDTO;
+import com.DPhong.storeMe.entity.authentication.BackupCode;
 import com.DPhong.storeMe.entity.authentication.User;
 import com.DPhong.storeMe.entity.authentication.User2FAMethod;
 import com.DPhong.storeMe.entity.authentication.Verification;
@@ -13,10 +14,13 @@ import com.DPhong.storeMe.enums.User2FAType;
 import com.DPhong.storeMe.enums.VerificationType;
 import com.DPhong.storeMe.exception.AuthException;
 import com.DPhong.storeMe.exception.ResourceNotFoundException;
+import com.DPhong.storeMe.repository.BackupCodeRepository;
 import com.DPhong.storeMe.repository.User2FAMethodRepository;
 import com.DPhong.storeMe.repository.UserRepository;
 import com.DPhong.storeMe.security.SecurityUtils;
 import com.DPhong.storeMe.security.TokenProvider;
+import com.DPhong.storeMe.util.BackupCodeGenerator;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -27,18 +31,18 @@ import org.springframework.stereotype.Service;
 public class TwoFAServiceImpl implements TwoFAService {
 
   private final GAService gaService;
-  private final SecurityUtils securityUtils;
   private final UserRepository userRepository;
   private final User2FAMethodRepository user2FAMethodRepository;
   private final RedisTemplate<String, Object> redisTemplate;
   private final VerificationService verificationService;
   private final RefreshTokenService refreshTokenService;
   private final TokenProvider tokenProvider;
+  private final BackupCodeRepository backupCodeRepository;
 
   // ============================ SWITCH 2FA METHOD ============================
   @Override
   public void switch2FAMethod(boolean enable) {
-    Long userId = securityUtils.getCurrentUserId();
+    Long userId = SecurityUtils.getCurrentUserId();
     User user =
         userRepository
             .findById(userId)
@@ -61,7 +65,7 @@ public class TwoFAServiceImpl implements TwoFAService {
   // ============================ SETUP TOTP ============================
   @Override
   public TOTPSetupResponseDTO setupTOTP() {
-    Long userId = securityUtils.getCurrentUserId();
+    Long userId = SecurityUtils.getCurrentUserId();
     User user =
         userRepository
             .findById(userId)
@@ -78,7 +82,7 @@ public class TwoFAServiceImpl implements TwoFAService {
   // ============================ VERIFY TOTP SETUP ============================
   @Override
   public TOTPVerifySetupResponseDTO verifySetupTOTP(String code) {
-    Long userId = securityUtils.getCurrentUserId();
+    Long userId = SecurityUtils.getCurrentUserId();
     String secretKey = (String) redisTemplate.opsForValue().get(RedisKey.TOTP_SETUP + userId);
     if (secretKey == null) {
       throw new ResourceNotFoundException("TOTP setup not found or expired");
@@ -95,6 +99,7 @@ public class TwoFAServiceImpl implements TwoFAService {
             builder.and(
                 builder.equal(root.get("userId"), userId),
                 builder.equal(root.get("type"), User2FAType.TOTP)));
+    backupCodeRepository.delete((root, _, builder) -> builder.equal(root.get("userId"), userId));
     // save new
     User2FAMethod user2FAMethod = new User2FAMethod();
     user2FAMethod.setUserId(userId);
@@ -103,7 +108,7 @@ public class TwoFAServiceImpl implements TwoFAService {
     user2FAMethodRepository.save(user2FAMethod);
     redisTemplate.delete(RedisKey.TOTP_SETUP + userId);
     TOTPVerifySetupResponseDTO responseDTO = new TOTPVerifySetupResponseDTO();
-    // TODO: generate backup_code
+    responseDTO.setBackupCodes(generateBackupCodes());
     return responseDTO;
   }
 
@@ -125,8 +130,22 @@ public class TwoFAServiceImpl implements TwoFAService {
                         builder.equal(root.get("type"), User2FAType.TOTP)))
             .orElseThrow(() -> new ResourceNotFoundException("TOTP method not found for user"));
     Integer codeInt = Integer.parseInt(request.getCode());
-    boolean isValid = gaService.isValid(user2FAMethod.getSecret(), codeInt);
-    if (!isValid) {
+    boolean isValidBackupCode = false;
+    if (request.isBackupCode()) {
+      BackupCode backupCode =
+          backupCodeRepository
+              .findOne(
+                  (root, _, builder) ->
+                      builder.and(
+                          builder.equal(root.get("userId"), userId),
+                          builder.equal(root.get("code"), request.getCode())))
+              .orElseThrow(() -> new AuthException(ErrorCode.AUTH_FAILED, "Invalid backup code"));
+      backupCodeRepository.delete(backupCode);
+      isValidBackupCode = true;
+    } else {
+      isValidBackupCode = gaService.isValid(user2FAMethod.getSecret(), codeInt);
+    }
+    if (!isValidBackupCode) {
       throw new AuthException(ErrorCode.AUTH_FAILED, "Invalid TOTP code");
     }
     String accessToken = tokenProvider.generateAccessToken(userId);
@@ -135,5 +154,21 @@ public class TwoFAServiceImpl implements TwoFAService {
     authResponseDTO.setAccessToken(accessToken);
     authResponseDTO.setRefreshToken(refreshToken);
     return authResponseDTO;
+  }
+
+  private List<String> generateBackupCodes() {
+    List<String> backupCodes = BackupCodeGenerator.generateBackupCode(8, 8);
+    List<BackupCode> backupCodeEntities =
+        backupCodes.stream()
+            .map(
+                code -> {
+                  BackupCode backupCode = new BackupCode();
+                  backupCode.setCode(code);
+                  backupCode.setUserId(SecurityUtils.getCurrentUserId());
+                  return backupCode;
+                })
+            .toList();
+    backupCodeRepository.saveAll(backupCodeEntities);
+    return backupCodes;
   }
 }
