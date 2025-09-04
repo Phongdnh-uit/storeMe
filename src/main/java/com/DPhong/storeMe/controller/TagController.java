@@ -1,6 +1,5 @@
 package com.DPhong.storeMe.controller;
 
-import com.DPhong.storeMe.constant.AppConstant;
 import com.DPhong.storeMe.dto.ApiResponse;
 import com.DPhong.storeMe.dto.tag.TagRequestDTO;
 import com.DPhong.storeMe.dto.tag.TagResponseDTO;
@@ -14,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @io.swagger.v3.oas.annotations.tags.Tag(name = "Tag", description = "Quản lý thẻ của node")
-@RequestMapping(AppConstant.BASE_URL + "/tags")
+@RequestMapping("/tags")
 @RestController
 public class TagController extends GenericController<Tag, TagRequestDTO, TagResponseDTO> {
 

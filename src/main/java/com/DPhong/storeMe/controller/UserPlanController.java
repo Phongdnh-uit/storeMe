@@ -1,6 +1,5 @@
 package com.DPhong.storeMe.controller;
 
-import com.DPhong.storeMe.constant.AppConstant;
 import com.DPhong.storeMe.dto.ApiResponse;
 import com.DPhong.storeMe.dto.PageResponse;
 import com.DPhong.storeMe.dto.userPlan.UserPlanRequestDTO;
@@ -27,7 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "User Plan", description = "Đăng kí gói dịch vụ")
 @RequiredArgsConstructor
-@RequestMapping(AppConstant.BASE_URL + "/user-plans")
+@RequestMapping("/user-plans")
 @RestController
 public class UserPlanController {
   private final UserPlanService userPlanService;

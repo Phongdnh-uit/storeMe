@@ -1,13 +1,12 @@
 package com.DPhong.storeMe.service.user;
 
 import com.DPhong.storeMe.dto.FieldError;
-import com.DPhong.storeMe.dto.PageResponse;
 import com.DPhong.storeMe.dto.authentication.ChangePasswordRequestDTO;
 import com.DPhong.storeMe.dto.authentication.RegisterRequestDTO;
 import com.DPhong.storeMe.dto.user.UserRequestDTO;
 import com.DPhong.storeMe.dto.user.UserResponseDTO;
-import com.DPhong.storeMe.entity.authorization.Role;
 import com.DPhong.storeMe.entity.authentication.User;
+import com.DPhong.storeMe.entity.authorization.Role;
 import com.DPhong.storeMe.enums.ErrorCode;
 import com.DPhong.storeMe.enums.LoginProvider;
 import com.DPhong.storeMe.enums.RoleName;
@@ -19,28 +18,32 @@ import com.DPhong.storeMe.mapper.UserMapper;
 import com.DPhong.storeMe.repository.RoleRepository;
 import com.DPhong.storeMe.repository.UserRepository;
 import com.DPhong.storeMe.security.SecurityUtils;
+import com.DPhong.storeMe.service.GenericService;
 import java.util.ArrayList;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-@RequiredArgsConstructor
 @Service
-public class UserServiceImpl implements UserService {
+public class UserServiceImpl extends GenericService<User, UserRequestDTO, UserResponseDTO>
+    implements UserService {
 
-  private final UserRepository userRepository;
-  private final UserMapper userMapper;
   private final RoleRepository roleRepository;
   private final PasswordEncoder passwordEncoder;
-  private final SecurityUtils securityUtils;
+
+  public UserServiceImpl(
+      UserRepository repository,
+      UserMapper mapper,
+      RoleRepository roleRepository,
+      PasswordEncoder passwordEncoder) {
+    super(repository, mapper);
+    this.roleRepository = roleRepository;
+    this.passwordEncoder = passwordEncoder;
+  }
 
   @Override
   public UserResponseDTO getCurrent() {
-    return userMapper.entityToResponse(getCurrentUser());
+    return mapper.entityToResponse(getCurrentUser());
   }
 
   /**
@@ -65,10 +68,10 @@ public class UserServiceImpl implements UserService {
             .findByName(RoleName.USER.getName())
             .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
     user.setRole(userRole);
-    user = userRepository.save(user);
+    user = repository.save(user);
 
     // Create a folder for the user: USERROOT, TRASH, SHARED
-    return userMapper.entityToResponse(user);
+    return mapper.entityToResponse(user);
   }
 
   /**
@@ -79,10 +82,10 @@ public class UserServiceImpl implements UserService {
    */
   private void validateUser(RegisterRequestDTO registerRequestDTO) {
     List<FieldError> fieldErrors = new ArrayList<>();
-    if (userRepository.existsByEmail(registerRequestDTO.getEmail())) {
+    if (((UserRepository) repository).existsByEmail(registerRequestDTO.getEmail())) {
       fieldErrors.add(FieldError.from("email", "email đã tồn tại"));
     }
-    if (userRepository.existsByUsername(registerRequestDTO.getUsername())) {
+    if (((UserRepository) repository).existsByUsername(registerRequestDTO.getUsername())) {
       fieldErrors.add(FieldError.from("username", "username đã tồn tại"));
     }
     if (!fieldErrors.isEmpty()) {
@@ -106,68 +109,55 @@ public class UserServiceImpl implements UserService {
       throw new AuthException(ErrorCode.INVALID_CREDENTIALS, fieldErrors);
     }
     user.setPasswordHash(passwordEncoder.encode(changePasswordRequestDTO.getNewPassword()));
-    userRepository.save(user);
+    repository.save(user);
   }
 
   @Override
   public void updateStatus(Long userId, UserStatus status) {
     User user =
-        userRepository
+        repository
             .findById(userId)
             .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     user.setStatus(status);
-    userRepository.save(user);
+    repository.save(user);
   }
 
   /** Get the current user from the security context. */
   private User getCurrentUser() {
-    return userRepository
-        .findById(securityUtils.getCurrentUserId())
+    return repository
+        .findById(SecurityUtils.getCurrentUserId())
         .orElseThrow(() -> new ResourceNotFoundException("User not found"));
   }
 
+  // ============================ CREATE ============================
   @Override
-  public PageResponse<UserResponseDTO> getAll(Specification<User> spec, Pageable pageable) {
-    Page<User> userPage = userRepository.findAll(spec, pageable);
-    return PageResponse.from(userPage.map(userMapper::entityToResponse));
+  protected void beforeCreateMapper(UserRequestDTO request) {
+    validateUser(0L, request);
   }
 
   @Override
-  public UserResponseDTO create(UserRequestDTO userRequestDTO) {
-    validateUser(0L, userRequestDTO);
-    User user = userMapper.requestToEntity(userRequestDTO);
-    user.setStatus(UserStatus.UNVERIFIED);
-    user.setLoginProvider(LoginProvider.LOCAL);
-    user.setRole(
+  protected void afterCreateMapper(UserRequestDTO request, User entity) {
+    entity.setStatus(UserStatus.UNVERIFIED);
+    entity.setLoginProvider(LoginProvider.LOCAL);
+    entity.setRole(
         roleRepository
-            .findById(userRequestDTO.getRoleId())
+            .findById(request.getRoleId())
             .orElseThrow(() -> new ResourceNotFoundException("Role not found")));
-    user = userRepository.save(user);
-    return userMapper.entityToResponse(user);
+  }
+
+  // ============================ UPDATE ============================
+
+  @Override
+  protected void beforeUpdateMapper(Long id, UserRequestDTO request, User oldEntity) {
+    validateUser(id, request);
   }
 
   @Override
-  public UserResponseDTO update(Long userId, UserRequestDTO userRequestDTO) {
-    validateUser(userId, userRequestDTO);
-    User user =
-        userRepository
-            .findById(userId)
-            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-    userMapper.partialUpdate(userRequestDTO, user);
-    user.setRole(
+  protected void afterUpdateMapper(Long id, UserRequestDTO request, User newEntity) {
+    newEntity.setRole(
         roleRepository
-            .findById(userRequestDTO.getRoleId())
+            .findById(request.getRoleId())
             .orElseThrow(() -> new ResourceNotFoundException("Role not found")));
-    user = userRepository.save(user);
-    return userMapper.entityToResponse(user);
-  }
-
-  @Override
-  public void delete(Long userId) {
-    if (!userRepository.existsById(userId)) {
-      throw new ResourceNotFoundException("User not found");
-    }
-    userRepository.deleteById(userId);
   }
 
   /**
@@ -176,7 +166,7 @@ public class UserServiceImpl implements UserService {
    */
   void validateUser(Long userId, UserRequestDTO userRequestDTO) {
     List<FieldError> fieldErrors = new ArrayList<>();
-    if (userRepository.exists(
+    if (repository.exists(
         (root, _, builder) ->
             builder.and(
                 builder.equal(root.get("email"), userRequestDTO.getEmail()),

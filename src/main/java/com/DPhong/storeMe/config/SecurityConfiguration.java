@@ -1,12 +1,11 @@
 package com.DPhong.storeMe.config;
 
-import com.DPhong.storeMe.constant.AppConstant;
 import com.DPhong.storeMe.enums.RoleName;
 import com.DPhong.storeMe.interceptor.PermissionInterceptor;
-import com.DPhong.storeMe.security.jwt.CustomJwtAuthenticationConverter;
-import com.DPhong.storeMe.security.oauth2.CustomOAuth2UserService;
 import com.DPhong.storeMe.security.filter.EnsureUserExistsFilter;
 import com.DPhong.storeMe.security.filter.JwtBlacklistFilter;
+import com.DPhong.storeMe.security.jwt.CustomJwtAuthenticationConverter;
+import com.DPhong.storeMe.security.oauth2.CustomOAuth2UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,23 +27,22 @@ public class SecurityConfiguration implements WebMvcConfigurer {
 
   private final PermissionInterceptor permissionInterceptor;
 
-  private final String BASE_URL = AppConstant.BASE_URL;
   private final String[] whiteList = {
-    BASE_URL + "/auth/login",
-    BASE_URL + "/auth/register",
-    BASE_URL + "/auth/refresh",
-    BASE_URL + "/auth/verify-email",
-    BASE_URL + "/auth/forgot-password",
-    BASE_URL + "/auth/reset-password",
-    BASE_URL + "/auth/registration/send-email",
-    BASE_URL + "/oauth2/**",
-    BASE_URL + "/2fa/verify-totp",
+    "/auth/login",
+    "/auth/register",
+    "/auth/refresh",
+    "/auth/verify-email",
+    "/auth/forgot-password",
+    "/auth/reset-password",
+    "/auth/registration/send-email",
+    "/oauth2/**",
+    "/2fa/verify-totp",
     "/swagger-ui/**",
     "/v3/api-docs/**"
   };
 
   private final String[] whiteListAdmin = {
-    BASE_URL + "/storage-plans/**", BASE_URL + "/roles/**",
+    "/storage-plans/**", "/roles/**",
   };
 
   private final OAuth2AuthenticationSuccessHandler oauth2AuthenticationSuccessHandler;
@@ -83,11 +81,9 @@ public class SecurityConfiguration implements WebMvcConfigurer {
         .oauth2Login(
             oauth2 ->
                 oauth2
-                    .authorizationEndpoint(
-                        endpoint -> endpoint.baseUri(BASE_URL + "/oauth2/authorize"))
+                    .authorizationEndpoint(endpoint -> endpoint.baseUri("/oauth2/authorize"))
                     .redirectionEndpoint(
-                        endpoint ->
-                            endpoint.baseUri(BASE_URL + "/oauth2/callback/{registrationId}"))
+                        endpoint -> endpoint.baseUri("/oauth2/callback/{registrationId}"))
                     .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
                     .successHandler(oauth2AuthenticationSuccessHandler))
         .sessionManagement(

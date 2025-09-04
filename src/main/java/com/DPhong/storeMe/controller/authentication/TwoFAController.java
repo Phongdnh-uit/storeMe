@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "Two Factor Authentication", description = "Quản lý xác thực hai yếu tố")
-@RequestMapping(AppConstant.BASE_URL + "/2fa")
+@RequestMapping("/2fa")
 @RequiredArgsConstructor
 @RestController
 public class TwoFAController {

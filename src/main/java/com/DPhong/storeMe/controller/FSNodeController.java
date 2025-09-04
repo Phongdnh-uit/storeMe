@@ -35,7 +35,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "File System", description = "Endpoint thao tác với hệ thống file")
-@RequestMapping(AppConstant.BASE_URL + "/fs")
+@RequestMapping("/fs")
 @RequiredArgsConstructor
 @RestController
 public class FSNodeController {

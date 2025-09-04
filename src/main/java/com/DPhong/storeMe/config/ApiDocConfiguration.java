@@ -7,6 +7,7 @@ import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
+import org.springdoc.core.customizers.OpenApiCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -30,8 +31,8 @@ public class ApiDocConfiguration {
 
   private Info createInfo() {
     Info infomation = new Info();
-    infomation.setTitle("STORE ME API - HỆ THỐNG LƯU TRỮ FILE");
-    infomation.setVersion("1.0");
+    infomation.setTitle("STORE ME API");
+    infomation.setVersion("1.0 beta");
     infomation.setContact(createContact());
     infomation.setDescription(
         "Hệ thống lưu trữ file cho phép người dùng upload, download và quản lý file của mình.\n");
@@ -45,6 +46,38 @@ public class ApiDocConfiguration {
         .info(createInfo())
         .addSecurityItem(new SecurityRequirement().addList("Bearer Authentication"))
         .components(
-            new Components().addSecuritySchemes("Bearer Authentication", createAPIKeyScheme()));
+            new Components().addSecuritySchemes("BearerAuthentication", createAPIKeyScheme()));
+  }
+
+  @Bean
+  public OpenApiCustomizer operationIdCustomizer() {
+    return openApi -> {
+      openApi
+          .getPaths()
+          .values()
+          .forEach(
+              (item) -> {
+                item.readOperations()
+                    .forEach(
+                        operation -> {
+                          String operationId = operation.getOperationId();
+                          String summary = operation.getSummary();
+                          if (operationId != null) {
+                            String entityName =
+                                operation.getTags().isEmpty()
+                                    ? "Default"
+                                    : operation.getTags().get(0).replaceAll("\\s+", "");
+                            operation.setOperationId(operationId.replace("{Entity}", entityName));
+                          }
+                          if (summary != null) {
+                            String entityName =
+                                operation.getTags().isEmpty()
+                                    ? "Default"
+                                    : operation.getTags().get(0);
+                            operation.setSummary(summary.replace("{Entity}", entityName));
+                          }
+                        });
+              });
+    };
   }
 }

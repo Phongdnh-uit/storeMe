@@ -1,6 +1,5 @@
 package com.DPhong.storeMe.controller;
 
-import com.DPhong.storeMe.constant.AppConstant;
 import com.DPhong.storeMe.dto.ApiResponse;
 import com.DPhong.storeMe.dto.role.RoleRequestDTO;
 import com.DPhong.storeMe.dto.role.RoleResponseDTO;
@@ -13,8 +12,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Role Management", description = "Quản lý quyền truy cập")
-@RequestMapping(AppConstant.BASE_URL + "/roles")
+@Tag(name = "Role", description = "Quản lý quyền truy cập")
+@RequestMapping("/roles")
 @RestController
 public class RoleController extends GenericController<Role, RoleRequestDTO, RoleResponseDTO> {
 

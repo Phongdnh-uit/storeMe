@@ -24,8 +24,8 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Admin Ticket Management", description = "Quản lý vé hỗ trợ cho quản trị viên")
-@RequestMapping(AppConstant.BASE_URL + "/support/tickets/manage")
+@Tag(name = "AdminTicket", description = "Quản lý vé hỗ trợ cho quản trị viên")
+@RequestMapping("/support/tickets/manage")
 @RestController
 public class AdminTicketController
     extends GenericController<Ticket, AdminTicketRequestDTO, TicketResponseDTO> {

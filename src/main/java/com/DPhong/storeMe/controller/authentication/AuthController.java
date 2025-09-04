@@ -22,7 +22,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "Authentication", description = "Endpoint xác thực người dùng")
-@RequestMapping(AppConstant.BASE_URL + "/auth")
+@RequestMapping("/auth")
 @RequiredArgsConstructor
 @RestController
 public class AuthController {

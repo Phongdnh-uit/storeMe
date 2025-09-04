@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "OAuth2", description = "OAuth2 API")
 @RequiredArgsConstructor
-@RequestMapping(AppConstant.BASE_URL + "/oauth2")
+@RequestMapping("/oauth2")
 @RestController
 public class OAuth2Controller {
 
