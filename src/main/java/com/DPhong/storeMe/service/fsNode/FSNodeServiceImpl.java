@@ -6,9 +6,9 @@ import com.DPhong.storeMe.dto.fileSystemNode.FSResponseDTO;
 import com.DPhong.storeMe.dto.fileSystemNode.TransferFSNodeRequestDTO;
 import com.DPhong.storeMe.dto.fileSystemNode.UpdateFSNodeRequestDTO;
 import com.DPhong.storeMe.dto.fileSystemNode.UploadFileRequestDTO;
+import com.DPhong.storeMe.entity.authentication.User;
 import com.DPhong.storeMe.entity.fsNode.FSNode;
 import com.DPhong.storeMe.entity.fsNode.FileMetadata;
-import com.DPhong.storeMe.entity.authentication.User;
 import com.DPhong.storeMe.entity.plan.UserPlan;
 import com.DPhong.storeMe.enums.ErrorCode;
 import com.DPhong.storeMe.enums.FSType;
@@ -51,7 +51,6 @@ public class FSNodeServiceImpl implements FSNodeService {
   private final UserPlanService userPlanService;
   private final UserRepository userRepository;
   private final FSNodeRepository repository;
-  private final SecurityUtils securityUtils;
   private final FSNodeMapper fsNodeMapper;
   private final FileMetadataRepository fileMetadataRepository;
   private final StorageService storageService;
@@ -71,7 +70,7 @@ public class FSNodeServiceImpl implements FSNodeService {
   public PageResponse<FSResponseDTO> getAll(
       Long parentId, Specification<FSNode> spec, Pageable pageable) {
     // 1. ---- Get current user id ----
-    Long userId = securityUtils.getCurrentUserId();
+    Long userId = SecurityUtils.getCurrentUserId();
     // 2. ---- Build basic spec ----
     Specification<FSNode> baseSpec =
         (root, _, builder) -> builder.and(builder.isNull(root.get("deletedAt")));
@@ -97,7 +96,7 @@ public class FSNodeServiceImpl implements FSNodeService {
   @Override
   public FSResponseDTO getById(Long id) {
     // 1. ---- Get current user id ----
-    Long userId = securityUtils.getCurrentUserId();
+    Long userId = SecurityUtils.getCurrentUserId();
     // 2. ---- Find item by id and userId ----
     FSNode fsNode =
         repository
@@ -123,7 +122,7 @@ public class FSNodeServiceImpl implements FSNodeService {
         request.getParentId() == null ? null : getParentFolder(request.getParentId());
     // 1.1 ---- Check if user has permission to create folder in parent folder ----
     if (parentFolder != null) {
-      fsPermissionService.checkCanWrite(securityUtils.getCurrentUserId(), parentFolder);
+      fsPermissionService.checkCanWrite(SecurityUtils.getCurrentUserId(), parentFolder);
     }
     List<FSNode> items = getItemInNode(request.getParentId());
     if (items.stream()
@@ -135,7 +134,7 @@ public class FSNodeServiceImpl implements FSNodeService {
     // 2. ---- Object ----
     User user =
         userRepository
-            .findById(securityUtils.getCurrentUserId())
+            .findById(SecurityUtils.getCurrentUserId())
             .orElseThrow(() -> new ResourceNotFoundException("User not found."));
 
     // 2. ---- Create new folder ----
@@ -160,7 +159,7 @@ public class FSNodeServiceImpl implements FSNodeService {
   @Override
   public List<FSResponseDTO> uploadFiles(UploadFileRequestDTO request) {
     // 1. ---- Validate ----
-    Long userId = securityUtils.getCurrentUserId();
+    Long userId = SecurityUtils.getCurrentUserId();
     // 1.1 ---- Check if user has a plan ----
     UserPlan userPlan =
         userPlanService
@@ -245,7 +244,7 @@ public class FSNodeServiceImpl implements FSNodeService {
             .orElseThrow(() -> new ResourceNotFoundException());
 
     // 2. ---- Check if user has permission to access the file ----
-    fsPermissionService.checkCanRead(securityUtils.getCurrentUserId(), fsNode);
+    fsPermissionService.checkCanRead(SecurityUtils.getCurrentUserId(), fsNode);
 
     FileMetadata fileMetadata = fsNode.getFileMetadata();
     if (fileMetadata == null) {
@@ -265,7 +264,7 @@ public class FSNodeServiceImpl implements FSNodeService {
     // 1. ---- Validate ----
     FSNode fsNode = getItemById(id);
     // 1.1 ---- Check if user has permission to update the item ----
-    fsPermissionService.checkCanWrite(securityUtils.getCurrentUserId(), fsNode);
+    fsPermissionService.checkCanWrite(SecurityUtils.getCurrentUserId(), fsNode);
     //  2. ---- Handle in each case ----
     List<FSNode> itemsInNode =
         getItemInNode(fsNode.getParent() == null ? null : fsNode.getParent().getId());
@@ -275,7 +274,7 @@ public class FSNodeServiceImpl implements FSNodeService {
     }
     fsNode.setName(request.getName());
     // 2.1 ---- Update hidden and locked status if provided - Only owner can change this ----
-    if (fsNode.getUser().getId().equals(securityUtils.getCurrentUserId())) {
+    if (fsNode.getUser().getId().equals(SecurityUtils.getCurrentUserId())) {
       fsNode.setHidden(request.isHidden());
       fsNode.setLocked(request.isLocked());
     }
@@ -290,12 +289,12 @@ public class FSNodeServiceImpl implements FSNodeService {
     // 1. ---- Validate ----
     FSNode fsNode = getItemById(id);
     // 1.1 ---- Check if user has permission to update the item ----
-    fsPermissionService.checkCanWrite(securityUtils.getCurrentUserId(), fsNode);
+    fsPermissionService.checkCanWrite(SecurityUtils.getCurrentUserId(), fsNode);
     FSNode destination =
         request.getDestinationId() == null ? null : getParentFolder(request.getDestinationId());
     // 1.2 ---- Check if user has permission to move/copy the item to destination folder ----
-    fsPermissionService.checkCanWrite(securityUtils.getCurrentUserId(), fsNode);
-    fsPermissionService.checkCanWrite(securityUtils.getCurrentUserId(), destination);
+    fsPermissionService.checkCanWrite(SecurityUtils.getCurrentUserId(), fsNode);
+    fsPermissionService.checkCanWrite(SecurityUtils.getCurrentUserId(), destination);
     List<FSNode> itemsInTarget = getItemInNode(request.getDestinationId());
     if (itemsInTarget.stream()
         .anyMatch(
@@ -308,7 +307,7 @@ public class FSNodeServiceImpl implements FSNodeService {
     switch (request.getAction()) {
       case MOVE:
         //  ---- Only move in same store space ----
-        if ((destination == null && fsNode.getUser().getId() != securityUtils.getCurrentUserId())
+        if ((destination == null && fsNode.getUser().getId() != SecurityUtils.getCurrentUserId())
             || (destination != null && destination.getUser().getId() != fsNode.getUser().getId())) {
           throw new DataConflictException("Cannot move item to another workspace.");
         }
@@ -338,7 +337,7 @@ public class FSNodeServiceImpl implements FSNodeService {
                         builder.equal(root.get("id"), id), builder.isNull(root.get("deletedAt"))))
             .orElseThrow(() -> new ResourceNotFoundException("Item not found."));
     // 1.1 ---- Check if user has permission to delete the item ----
-    fsPermissionService.checkCanDelete(securityUtils.getCurrentUserId(), item);
+    fsPermissionService.checkCanDelete(SecurityUtils.getCurrentUserId(), item);
 
     item.setDeletedAt(now);
     item.setLastAccessed(now);
@@ -369,7 +368,7 @@ public class FSNodeServiceImpl implements FSNodeService {
   @Override
   public PageResponse<FSResponseDTO> getTrash(Specification<FSNode> spec, Pageable pageable) {
     // 1. ---- Get current user id ----
-    Long userId = securityUtils.getCurrentUserId();
+    Long userId = SecurityUtils.getCurrentUserId();
     // 2. ---- Build basic spec ----
     Specification<FSNode> baseSpec =
         (root, _, builder) ->
@@ -389,7 +388,7 @@ public class FSNodeServiceImpl implements FSNodeService {
   @Override
   public void restore(Long id) {
     // 1. ---- Get current user id ----
-    Long userId = securityUtils.getCurrentUserId();
+    Long userId = SecurityUtils.getCurrentUserId();
     // 2. ---- Find item by id and userId ----
     FSNode fsNode =
         repository
@@ -420,7 +419,7 @@ public class FSNodeServiceImpl implements FSNodeService {
   @Override
   public void deletePermanently(Long id) {
     // 1. ---- Get current user id ----
-    Long userId = securityUtils.getCurrentUserId();
+    Long userId = SecurityUtils.getCurrentUserId();
     // 2. ---- Find item by id and userId ----
     FSNode fsNode =
         repository
@@ -719,7 +718,7 @@ public class FSNodeServiceImpl implements FSNodeService {
     copiedNode.setSize(fsNode.getSize());
     copiedNode.setUser(
         userRepository
-            .findById(securityUtils.getCurrentUserId())
+            .findById(SecurityUtils.getCurrentUserId())
             .orElseThrow(() -> new ResourceNotFoundException("User not found.")));
     copiedNode.setHidden(fsNode.isHidden());
     copiedNode.setLocked(fsNode.isLocked());

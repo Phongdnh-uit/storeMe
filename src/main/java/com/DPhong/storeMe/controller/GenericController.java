@@ -1,5 +1,7 @@
 package com.DPhong.storeMe.controller;
 
+import com.DPhong.storeMe.dto.ActionClass.OnCreate;
+import com.DPhong.storeMe.dto.ActionClass.OnUpdate;
 import com.DPhong.storeMe.dto.ApiResponse;
 import com.DPhong.storeMe.dto.PageResponse;
 import com.DPhong.storeMe.service.CrudService;
@@ -7,13 +9,14 @@ import com.turkraft.springfilter.boot.Filter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.Valid;
+import jakarta.validation.groups.Default;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -61,14 +64,16 @@ public abstract class GenericController<E, I, O> {
 
   @Operation(operationId = "create{Entity}", summary = "Tạo mới {Entity}")
   @PostMapping
-  public ResponseEntity<ApiResponse<O>> create(@Valid @RequestBody I request) {
+  public ResponseEntity<ApiResponse<O>> create(
+      @Validated({Default.class, OnCreate.class}) @RequestBody I request) {
     return ResponseEntity.ok(ApiResponse.success(service.create(request)));
   }
 
   @Operation(operationId = "update{Entity}ById", summary = "Cập nhật {Entity} theo id")
   @PutMapping("/{id}")
   public ResponseEntity<ApiResponse<O>> update(
-      @PathVariable("id") Long id, @Valid @RequestBody I request) {
+      @PathVariable("id") Long id,
+      @Validated({Default.class, OnUpdate.class}) @RequestBody I request) {
     return ResponseEntity.ok(ApiResponse.success(service.update(id, request)));
   }
 

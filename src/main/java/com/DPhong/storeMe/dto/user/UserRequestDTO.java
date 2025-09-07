@@ -1,5 +1,7 @@
 package com.DPhong.storeMe.dto.user;
 
+import com.DPhong.storeMe.dto.ActionClass.OnCreate;
+import com.DPhong.storeMe.enums.UserStatus;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -18,5 +20,10 @@ public class UserRequestDTO {
 
   @NotBlank @Email private String email;
 
+  @NotBlank(groups = {OnCreate.class})
+  private String password;
+
   @NotNull Long roleId;
+
+  @NotNull UserStatus status;
 }

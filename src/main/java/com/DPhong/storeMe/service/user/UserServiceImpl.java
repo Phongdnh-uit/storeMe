@@ -137,12 +137,12 @@ public class UserServiceImpl extends GenericService<User, UserRequestDTO, UserRe
 
   @Override
   protected void afterCreateMapper(UserRequestDTO request, User entity) {
-    entity.setStatus(UserStatus.UNVERIFIED);
     entity.setLoginProvider(LoginProvider.LOCAL);
     entity.setRole(
         roleRepository
             .findById(request.getRoleId())
             .orElseThrow(() -> new ResourceNotFoundException("Role not found")));
+    entity.setPasswordHash(passwordEncoder.encode(request.getPassword()));
   }
 
   // ============================ UPDATE ============================
